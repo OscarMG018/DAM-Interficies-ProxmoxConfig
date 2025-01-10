@@ -2,32 +2,25 @@ import 'package:flutter/material.dart';
 
 class LabeledTextField extends StatefulWidget {
   final String label;
-  final String initialText;
-  
-  LabeledTextField({
+  final TextEditingController controller;
+
+  const LabeledTextField({
     Key? key,
     required this.label,
-    this.initialText = '',
+    required this.controller,
   }) : super(key: key);
-
-  final GlobalKey<_LabeledTextFieldState> _key = GlobalKey<_LabeledTextFieldState>();
-  
-  String get text => (_key.currentState as _LabeledTextFieldState).text;
-  set text(String value) => (_key.currentState as _LabeledTextFieldState).text = value;
 
   @override
   State<LabeledTextField> createState() => _LabeledTextFieldState();
 }
 
 class _LabeledTextFieldState extends State<LabeledTextField> {
-  final TextEditingController _controller = TextEditingController();
-  bool _isFocused = false;
   late FocusNode _focusNode;
+  bool _isFocused = false;
 
   @override
   void initState() {
     super.initState();
-    _controller.text = widget.initialText;
     _focusNode = FocusNode();
     _focusNode.addListener(() {
       setState(() {
@@ -39,20 +32,13 @@ class _LabeledTextFieldState extends State<LabeledTextField> {
   @override
   void dispose() {
     _focusNode.dispose();
-    _controller.dispose();
     super.dispose();
-  }
-
-  String get text => _controller.text;
-  set text(String newText) {
-    _controller.text = newText;
-    setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: double.infinity,  
+      width: double.infinity,
       height: 80,
       child: CustomPaint(
         painter: CustomTextFieldPainter(isFocused: _isFocused),
@@ -73,7 +59,7 @@ class _LabeledTextFieldState extends State<LabeledTextField> {
               const SizedBox(height: 4),
               Expanded(
                 child: TextField(
-                  controller: _controller,
+                  controller: widget.controller,
                   focusNode: _focusNode,
                   decoration: const InputDecoration(
                     border: InputBorder.none,
@@ -92,7 +78,7 @@ class _LabeledTextFieldState extends State<LabeledTextField> {
 
 class CustomTextFieldPainter extends CustomPainter {
   final bool isFocused;
-  
+
   CustomTextFieldPainter({required this.isFocused});
 
   @override
@@ -101,7 +87,7 @@ class CustomTextFieldPainter extends CustomPainter {
       ..color = isFocused ? Colors.blue : Colors.grey
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2;
-      
+
     final Rect rect = Rect.fromLTWH(0, 0, size.width, size.height);
     canvas.drawRRect(
       RRect.fromRectAndRadius(rect, const Radius.circular(8)),

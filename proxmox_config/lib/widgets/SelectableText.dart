@@ -14,18 +14,23 @@ class SelectableText extends StatefulWidget {
 
   @override
   State<SelectableText> createState() => _SelectableTextState();
+
+  static GlobalKey<_SelectableTextState> selectableTextKey = GlobalKey<_SelectableTextState>();
 }
 
 class _SelectableTextState extends State<SelectableText> {
   bool _isSelected = false;
 
+  void setSelected(bool isSelected) {
+    setState(() {
+      _isSelected = isSelected;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        setState(() {
-          _isSelected = !_isSelected;
-        });
         if (widget.onClick != null) {
           widget.onClick!();
         }
