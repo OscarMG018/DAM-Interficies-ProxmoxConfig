@@ -11,13 +11,10 @@
 # Gestor d'arxius al Proxmox
 
 Fes una aplicació 'Flutter' que permeti gestionar arxius al Proxmox.
-
 Tota la obtenció de dades i intercanvi d'arxius es farà amb comandes *SSH* i *SCP*.
 
 ## Configuració de comptes
-
 Ha de permetre configurar varis servidors remots, amb les seves credencials.
-
 L'arxiu amb les configuracions ha de ser de tipus *.json* en alguna carpeta de l'aplicació (local).
 
 <br/>

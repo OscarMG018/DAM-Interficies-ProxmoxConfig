@@ -6,6 +6,7 @@ import 'package:proxmox_config/scenes/ServerScene.dart';
 import 'package:proxmox_config/utils/SSHUtils.dart';
 import 'package:proxmox_config/utils/SaveUtils.dart';
 import 'package:proxmox_config/widgets/CustomButton.dart';
+import 'package:proxmox_config/widgets/FileSelectorField.dart';
 import 'package:proxmox_config/widgets/ListWithTitle.dart';
 import 'package:proxmox_config/widgets/LabeledTextField.dart';
 import 'package:proxmox_config/widgets/SelectableText.dart' as proxmoxSelectableText;
@@ -25,7 +26,7 @@ class _ConfigSceneState extends State<ConfigScene> {
   final TextEditingController hostController = TextEditingController();
   final TextEditingController usernameController = TextEditingController();
   final TextEditingController portController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
+  final FileSelectorController passwordController = FileSelectorController();
   
   SSHClient? client = null;
 
@@ -88,7 +89,7 @@ class _ConfigSceneState extends State<ConfigScene> {
 
     passwordController.addListener(() {
       if (activeConfiguration != null) {
-        activeConfiguration!.idRsaPath = passwordController.text;
+        activeConfiguration!.idRsaPath = passwordController.selectedFilePath ?? "";
         saveConfigurations();
       }
     });
@@ -100,7 +101,7 @@ class _ConfigSceneState extends State<ConfigScene> {
       hostController.text = activeConfiguration!.host;
       usernameController.text = activeConfiguration!.username;
       portController.text = activeConfiguration!.port.toString();
-      passwordController.text = activeConfiguration!.idRsaPath;
+      passwordController.selectedFilePath = activeConfiguration!.idRsaPath;
     } else {
       nameController.clear();
       hostController.clear();
@@ -127,7 +128,7 @@ class _ConfigSceneState extends State<ConfigScene> {
   }
 
   void connectToServer() async {
-    String passwordPath = passwordController.text;
+    String passwordPath = passwordController.selectedFilePath ?? "";
     String password = await File(passwordPath).readAsString();
     SSHUtils.connect(
       host: hostController.text,
@@ -176,10 +177,10 @@ class _ConfigSceneState extends State<ConfigScene> {
       const SizedBox(height: 10),
       LabeledTextField(label: "Port", controller: portController),
       const SizedBox(height: 10),
-      LabeledTextField(label: "Password", controller: passwordController),
+      FileSelectorField(label: "Password", controller: passwordController),
     ];
   }
-
+  
   List<Widget> getSelectableText() {
     List<ServerConfiguration> favorites = configurations.where((config) => config.favorite).toList();
     List<ServerConfiguration> nonFavorites = configurations.where((config) => !config.favorite).toList();
