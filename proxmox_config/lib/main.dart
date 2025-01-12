@@ -25,15 +25,15 @@ class MainApp extends StatelessWidget {
 Session 2 -
 make a custom file widget 15 [DONE]
 
-get the files in the server directory and store them in a list 16
+get the files in the server directory and store them in a list 16 [DONE]
   - name
   - extension
   - folder?
 
-diplay the files in a list with the file widget, the image should be 17
+diplay the files in a list with the file widget, the image should be 17 [NEXT]
 of the extension or a folder icon
 
-when double clicking on a folder reread the files from the new location 18
+when double clicking on a folder reread the files from the new location 18 [NO]
 and display them again
 
 add a back button: cd ..

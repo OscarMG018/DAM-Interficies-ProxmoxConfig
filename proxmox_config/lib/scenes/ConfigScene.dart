@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'package:dartssh2/dartssh2.dart';
+import 'package:ssh2/ssh2.dart';
 import 'package:flutter/material.dart';
 import 'package:proxmox_config/models/ServerConfiguration.dart';
 import 'package:proxmox_config/scenes/ServerScene.dart';
@@ -133,7 +133,7 @@ class _ConfigSceneState extends State<ConfigScene> {
     SSHUtils.connect(
       host: hostController.text,
       username: usernameController.text,
-      password: password,
+      passwordOrKey: password,
       port: int.parse(portController.text),
     ).then((value) => {
       client = value,

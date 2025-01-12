@@ -1,4 +1,4 @@
-import 'package:dartssh2/dartssh2.dart';
+import 'package:ssh2/ssh2.dart';
 import 'package:flutter/material.dart';
 import '../models/FileData.dart';
 import '../utils/SSHUtils.dart';
@@ -65,7 +65,7 @@ class _ServerSceneState extends State<ServerScene> {
                   items: files.map((file) => FileDisplay(
                     fileName: file.name,
                     assetImagePath: file.getImagePath(),
-                    actions: ['Open', 'Delete'],
+                    actions: ['Rename', 'Delete',],
                     onActionSelected: (action) => _handleFileAction(action, file),
                   )).toList(),
                 ),

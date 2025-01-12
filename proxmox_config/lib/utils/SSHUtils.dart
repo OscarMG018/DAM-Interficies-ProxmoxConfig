@@ -1,46 +1,46 @@
 import 'dart:convert';
-import 'package:dartssh2/dartssh2.dart';
+import 'package:ssh2/ssh2.dart';
 import '../models/FileData.dart';
 
 class SSHUtils {
-  static Utf8Codec utf8 = const Utf8Codec();
-
   static Future<SSHClient> connect({
     required String host,
-    required String username,
-    required String password,
     required int port,
+    required String username,
+    required String passwordOrKey,
   }) async {
-    try {
-      final client = SSHClient(
-        await SSHSocket.connect(host, port),
-        username: username,
-        onPasswordRequest: () => password,
-      );
-      return client;
-    } catch (e) {
-      throw Exception('Failed to connect to $host:$port - $e');
+    // Create the SSHClient instance
+    final client = SSHClient(
+      host: host,
+      port: port,
+      username: username,
+      passwordOrKey: passwordOrKey,
+    );
+
+    // Attempt connection
+    String? result = await client.connect();
+    if (result != null) {
+      throw Exception('Failed to connect: $result');
     }
+
+    // Return the connected client
+    return client;
   }
 
-  static Future<({String stdout, String stderr})> executeCommand({
+  static Future<String> executeCommand({
     required SSHClient client,
     required String command,
   }) async {
-    try {
-      final session = await client.execute(command);
-      final stdout = await utf8.decodeStream(session.stdout);
-      final stderr = await utf8.decodeStream(session.stderr);
-      await session.done;
-      session.close();
-      return (stdout: stdout, stderr: stderr);
-    } catch (e) {
-      throw Exception('Error executing command "$command": $e');
-    }
+      // Execute the command
+      String? result = await client.execute(command);
+      if (result == null) {
+        throw Exception('Failed to execute command "$command"');
+      }
+      return result;
   }
 
   static void disconnect(SSHClient client) {
-    client.close();
+    client.disconnect();
   }
 
   static Future<List<FileData>> getDirectoryContents({
@@ -53,11 +53,8 @@ class SSHUtils {
         command: 'ls -la "$path"',
       );
       
-      if (result.stderr.isNotEmpty) {
-        throw Exception('Error listing directory: ${result.stderr}');
-      }
 
-      final lines = result.stdout.split('\n')
+      final lines = result.split('\n')
         ..removeWhere((line) => line.isEmpty || line.startsWith('total') || line.startsWith('.'));
 
       return lines.map((line) {
