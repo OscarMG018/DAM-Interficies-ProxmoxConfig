@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:dartssh2/dartssh2.dart';
+import '../models/FileData.dart';
 
 class SSHUtils {
   static Utf8Codec utf8 = const Utf8Codec();
@@ -40,5 +41,48 @@ class SSHUtils {
 
   static void disconnect(SSHClient client) {
     client.close();
+  }
+
+  static Future<List<FileData>> getDirectoryContents({
+    required SSHClient client,
+    required String path,
+  }) async {
+    try {
+      final result = await executeCommand(
+        client: client,
+        command: 'ls -la "$path"',
+      );
+      
+      if (result.stderr.isNotEmpty) {
+        throw Exception('Error listing directory: ${result.stderr}');
+      }
+
+      final lines = result.stdout.split('\n')
+        ..removeWhere((line) => line.isEmpty || line.startsWith('total') || line.startsWith('.'));
+
+      return lines.map((line) {
+        final parts = line.split(RegExp(r'\s+')).where((part) => part.isNotEmpty).toList();
+        if (parts.length < 9) return null;
+
+        final name = parts.sublist(8).join(' ');
+        final isFolder = line.startsWith('d');
+        
+        final lastDotIndex = name.lastIndexOf('.');
+        final extension = lastDotIndex != -1 && !isFolder
+            ? name.substring(lastDotIndex + 1)
+            : '';
+
+        return FileData(
+          name: name,
+          extension: extension,
+          isFolder: isFolder,
+        );
+      })
+      .where((file) => file != null)
+      .cast<FileData>()
+      .toList();
+    } catch (e) {
+      throw Exception('Failed to get directory contents: $e');
+    }
   }
 }

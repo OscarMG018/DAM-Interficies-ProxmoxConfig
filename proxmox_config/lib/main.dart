@@ -23,12 +23,20 @@ class MainApp extends StatelessWidget {
 
 /* 
 Session 2 -
-server name as title
-Close connection button
-Reconnect button
-make a custom file widget
-get the files in the server directory
-navigate in folders by clicking on them
+make a custom file widget 15 [DONE]
+
+get the files in the server directory and store them in a list 16
+  - name
+  - extension
+  - folder?
+
+diplay the files in a list with the file widget, the image should be 17
+of the extension or a folder icon
+
+when double clicking on a folder reread the files from the new location 18
+and display them again
+
+add a back button: cd ..
 
 Session 3 -
 order files
