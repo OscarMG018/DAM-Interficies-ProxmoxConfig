@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'package:ssh2/ssh2.dart';
+import 'package:dartssh2/dartssh2.dart';
 import 'package:flutter/material.dart';
 import 'package:proxmox_config/models/ServerConfiguration.dart';
 import 'package:proxmox_config/scenes/ServerScene.dart';
@@ -128,12 +128,11 @@ class _ConfigSceneState extends State<ConfigScene> {
   }
 
   void connectToServer() async {
-    String passwordPath = passwordController.selectedFilePath ?? "";
-    String password = await File(passwordPath).readAsString();
+
     SSHUtils.connect(
       host: hostController.text,
       username: usernameController.text,
-      passwordOrKey: password,
+      keyFilePath: passwordController.selectedFilePath ?? "",
       port: int.parse(portController.text),
     ).then((value) => {
       client = value,

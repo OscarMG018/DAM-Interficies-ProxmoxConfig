@@ -1,46 +1,52 @@
 import 'dart:convert';
-import 'package:ssh2/ssh2.dart';
+import 'package:dartssh2/dartssh2.dart';
 import '../models/FileData.dart';
+import 'dart:io';
 
 class SSHUtils {
+  static Utf8Codec utf8 = const Utf8Codec();
+
   static Future<SSHClient> connect({
     required String host,
-    required int port,
     required String username,
-    required String passwordOrKey,
+    required String keyFilePath,
+    required int port,
   }) async {
-    // Create the SSHClient instance
-    final client = SSHClient(
-      host: host,
-      port: port,
-      username: username,
-      passwordOrKey: passwordOrKey,
-    );
+    try {
+      final socket = await SSHSocket.connect(host, port);
+      final keyFile = File(keyFilePath);
+      final keyContents = await keyFile.readAsString();
+      
+      final client = SSHClient(
+        socket,
+        username: username,
+        identities: SSHKeyPair.fromPem(keyContents),
+      );
 
-    // Attempt connection
-    String? result = await client.connect();
-    if (result != null) {
-      throw Exception('Failed to connect: $result');
+      return client;
+    } catch (e) {
+      throw Exception('Failed to establish SSH connection: $e');
     }
-
-    // Return the connected client
-    return client;
   }
 
-  static Future<String> executeCommand({
+  static Future<({String stdout, String stderr})> executeCommand({
     required SSHClient client,
     required String command,
   }) async {
-      // Execute the command
-      String? result = await client.execute(command);
-      if (result == null) {
-        throw Exception('Failed to execute command "$command"');
-      }
-      return result;
+    try {
+      final session = await client.execute(command);
+      final stdout = await utf8.decodeStream(session.stdout);
+      final stderr = await utf8.decodeStream(session.stderr);
+      await session.done;
+      session.close();
+      return (stdout: stdout, stderr: stderr);
+    } catch (e) {
+      throw Exception('Error executing command "$command": $e');
+    }
   }
 
   static void disconnect(SSHClient client) {
-    client.disconnect();
+    client.close();
   }
 
   static Future<List<FileData>> getDirectoryContents({
@@ -53,8 +59,11 @@ class SSHUtils {
         command: 'ls -la "$path"',
       );
       
+      if (result.stderr.isNotEmpty) {
+        throw Exception('Error listing directory: ${result.stderr}');
+      }
 
-      final lines = result.split('\n')
+      final lines = result.stdout.split('\n')
         ..removeWhere((line) => line.isEmpty || line.startsWith('total') || line.startsWith('.'));
 
       return lines.map((line) {

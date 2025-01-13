@@ -1,4 +1,4 @@
-import 'package:ssh2/ssh2.dart';
+import 'package:dartssh2/dartssh2.dart';
 import 'package:flutter/material.dart';
 import '../models/FileData.dart';
 import '../utils/SSHUtils.dart';
