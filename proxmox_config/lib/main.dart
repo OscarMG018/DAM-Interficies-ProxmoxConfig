@@ -30,10 +30,10 @@ get the files in the server directory and store them in a list 16 [DONE]
   - extension
   - folder?
 
-diplay the files in a list with the file widget, the image should be 17 [NEXT]
+diplay the files in a list with the file widget, the image should be 17 [DONE]
 of the extension or a folder icon
 
-when double clicking on a folder reread the files from the new location 18 [NO]
+when double clicking on a folder reread the files from the new location 18 [WITH BUGS]
 and display them again
 
 add a back button: cd ..
@@ -46,17 +46,16 @@ download files
 upload files
 
 Session 4 -
+scene for configuring prot redirections
+redirection custom widget
+
+Session 5 -
 detect nodeJS servers
 detect jar files
 Able to run the server, stop it, restart it
 
-Session 5 -
-scene for configuring prot redirections
-redirection custom widget
-
 Session 6 - 7 -
 Beutify
-
 
 Bugs
 - Server List: select the active server

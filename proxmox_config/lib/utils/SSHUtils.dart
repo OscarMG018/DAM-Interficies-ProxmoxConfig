@@ -5,8 +5,10 @@ import 'dart:io';
 
 class SSHUtils {
   static Utf8Codec utf8 = const Utf8Codec();
+  static String currentDirectory = '/home';
+  static SSHClient? client;
 
-  static Future<SSHClient> connect({
+  static Future<void> connect({
     required String host,
     required String username,
     required String keyFilePath,
@@ -22,22 +24,21 @@ class SSHUtils {
         username: username,
         identities: SSHKeyPair.fromPem(keyContents),
       );
+      currentDirectory = '/home';
 
-      return client;
+      SSHUtils.client = client;
     } catch (e) {
       throw Exception('Failed to establish SSH connection: $e');
     }
   }
 
   static Future<({String stdout, String stderr})> executeCommand({
-    required SSHClient client,
     required String command,
   }) async {
     try {
-      final session = await client.execute(command);
+      final session = await SSHUtils.client!.execute(command);
       final stdout = await utf8.decodeStream(session.stdout);
       final stderr = await utf8.decodeStream(session.stderr);
-      await session.done;
       session.close();
       return (stdout: stdout, stderr: stderr);
     } catch (e) {
@@ -49,14 +50,29 @@ class SSHUtils {
     client.close();
   }
 
-  static Future<List<FileData>> getDirectoryContents({
-    required SSHClient client,
-    required String path,
-  }) async {
+  static void changeDirectory({required String path}) {
+    if (path == '..') {
+      final parts = currentDirectory.split('/');
+      parts.removeLast();
+      currentDirectory = parts.join('/');
+      if (currentDirectory.isEmpty) {
+        currentDirectory = '/';
+      }
+    } else if (path == '.') {
+      return;
+    } else {
+      if (currentDirectory != '/') {
+        currentDirectory += '/';
+      }
+      currentDirectory += path;
+    }
+    print(currentDirectory);
+  }
+
+  static Future<List<FileData>> getDirectoryContents() async {
     try {
       final result = await executeCommand(
-        client: client,
-        command: 'ls -la "$path"',
+        command: 'ls -la "$currentDirectory"',
       );
       
       if (result.stderr.isNotEmpty) {

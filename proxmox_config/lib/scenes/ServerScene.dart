@@ -1,4 +1,3 @@
-import 'package:dartssh2/dartssh2.dart';
 import 'package:flutter/material.dart';
 import '../models/FileData.dart';
 import '../utils/SSHUtils.dart';
@@ -6,11 +5,9 @@ import '../widgets/FileDisplay.dart';
 import '../widgets/ListWithTitle.dart';
 
 class ServerScene extends StatefulWidget {
-  final SSHClient client;
 
   const ServerScene({
     Key? key,
-    required this.client,
   }) : super(key: key);
   
   @override
@@ -19,7 +16,6 @@ class ServerScene extends StatefulWidget {
 
 class _ServerSceneState extends State<ServerScene> {
   List<FileData> files = [];
-  String currentPath = '/home';
   bool isLoading = true;
 
   @override
@@ -31,10 +27,7 @@ class _ServerSceneState extends State<ServerScene> {
   Future<void> _loadFiles() async {
     setState(() => isLoading = true);
     try {
-      final loadedFiles = await SSHUtils.getDirectoryContents(
-        client: widget.client,
-        path: currentPath,
-      );
+      final loadedFiles = await SSHUtils.getDirectoryContents();
       setState(() {
         files = loadedFiles;
         isLoading = false;
@@ -53,7 +46,7 @@ class _ServerSceneState extends State<ServerScene> {
   void _handleFileDoubleClick(file) {
     print('Double click on file: ${file.name}');
     if (file.isFolder) {
-      currentPath += '/${file.name}';
+      SSHUtils.changeDirectory(path: '${file.name}');
       _loadFiles();
     }
   }
@@ -69,7 +62,7 @@ class _ServerSceneState extends State<ServerScene> {
             child: isLoading
               ? Center(child: CircularProgressIndicator())
               : ListWithTitle(
-                  title: 'Files in $currentPath',
+                  title: 'Files',
                   items: files.map((file) => FileDisplay(
                     fileName: file.name,
                     assetImagePath: file.getImagePath(),

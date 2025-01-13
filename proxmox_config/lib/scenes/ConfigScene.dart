@@ -1,5 +1,3 @@
-import 'dart:io';
-import 'package:dartssh2/dartssh2.dart';
 import 'package:flutter/material.dart';
 import 'package:proxmox_config/models/ServerConfiguration.dart';
 import 'package:proxmox_config/scenes/ServerScene.dart';
@@ -28,8 +26,6 @@ class _ConfigSceneState extends State<ConfigScene> {
   final TextEditingController portController = TextEditingController();
   final FileSelectorController passwordController = FileSelectorController();
   
-  SSHClient? client = null;
-
   @override
   void initState() {
     super.initState();
@@ -135,12 +131,11 @@ class _ConfigSceneState extends State<ConfigScene> {
       keyFilePath: passwordController.selectedFilePath ?? "",
       port: int.parse(portController.text),
     ).then((value) => {
-      client = value,
       print("connected"),
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => ServerScene(client: client!),
+          builder: (context) => const ServerScene(),
         ),
       )
     });
