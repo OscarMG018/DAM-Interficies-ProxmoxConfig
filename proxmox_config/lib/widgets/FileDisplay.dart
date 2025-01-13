@@ -7,12 +7,14 @@ class FileDisplay extends StatefulWidget {
   final String assetImagePath;
   final List<String> actions;
   final Function(String)? onActionSelected;
+  final VoidCallback? onDoubleClick;
 
   const FileDisplay({
     required this.fileName,
     required this.assetImagePath,
     required this.actions,
     this.onActionSelected,
+    this.onDoubleClick,
   });
 
   @override
@@ -88,6 +90,19 @@ class _FileDisplayState extends State<FileDisplay> {
                 });
                 widget.onActionSelected?.call(widget.actions[buttonIndex]);
               }
+            }
+          },
+          onDoubleTap: () {
+            final RenderBox box = context.findRenderObject() as RenderBox;
+            final buttonWidth = 80.0;
+            final startX = box.size.width - (buttonWidth * widget.actions.length);
+            
+            // Get the local position of the tap
+            final tapPosition = box.globalToLocal(Offset.zero);
+            
+            // Only trigger if not clicking in the actions area
+            if (tapPosition.dx < startX) {
+              widget.onDoubleClick?.call();
             }
           },
         ),

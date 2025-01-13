@@ -50,6 +50,14 @@ class _ServerSceneState extends State<ServerScene> {
     print('Action: $action on file: ${file.name}');
   }
 
+  void _handleFileDoubleClick(file) {
+    print('Double click on file: ${file.name}');
+    if (file.isFolder) {
+      currentPath += '/${file.name}';
+      _loadFiles();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -67,6 +75,7 @@ class _ServerSceneState extends State<ServerScene> {
                     assetImagePath: file.getImagePath(),
                     actions: ['Rename', 'Delete',],
                     onActionSelected: (action) => _handleFileAction(action, file),
+                    onDoubleClick: () => _handleFileDoubleClick(file),
                   )).toList(),
                 ),
           ),
