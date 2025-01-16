@@ -2,7 +2,9 @@ import 'dart:convert';
 import 'package:dartssh2/dartssh2.dart';
 import '../models/FileData.dart';
 import 'dart:io';
-
+import 'dart:typed_data';
+import 'package:path_provider/path_provider.dart';
+import 'package:archive/archive.dart';
 class SSHUtils {
   static Utf8Codec utf8 = const Utf8Codec();
   static String currentDirectory = '/home';
@@ -69,10 +71,12 @@ class SSHUtils {
     print(currentDirectory);
   }
 
-  static Future<List<FileData>> getDirectoryContents() async {
+  static Future<List<FileData>> getDirectoryContents({
+    required bool showHidden,
+  }) async {
     try {
       final result = await executeCommand(
-        command: 'ls -la "$currentDirectory"',
+        command: showHidden ? 'ls -la "$currentDirectory"':'ls -l "$currentDirectory"',
       );
       
       if (result.stderr.isNotEmpty) {
@@ -106,5 +110,163 @@ class SSHUtils {
     } catch (e) {
       throw Exception('Failed to get directory contents: $e');
     }
+  }
+
+  static Future<void> renameFile({
+    required String oldName,
+    required String newName,
+  }) async {
+    try {
+      final result = await executeCommand(
+        command: 'mv "$oldName" "$newName"',
+      );
+
+      if (result.stderr.isNotEmpty) {
+        throw Exception('Error renaming file: ${result.stderr}');
+      }
+    } catch (e) {
+      throw Exception('Failed to rename file: $e');
+    }
+  }
+
+  static Future<void> deleteFile({
+    required String name,
+  }) async {
+    try {
+      final result = await executeCommand(
+        command: 'rm "$name"',
+      );
+
+      if (result.stderr.isNotEmpty) {
+        throw Exception('Error deleting file: ${result.stderr}');
+      }
+    } catch (e) {
+      throw Exception('Failed to delete file: $e');
+    }
+  }
+
+  static Future<void> downloadFile({
+    required String name,
+    required String destination,
+  }) async {
+    final sftp = await client!.sftp();
+    final remoteFile = await sftp.open(currentDirectory + "/" + name, mode: SftpFileOpenMode.read);
+    final localFile = File(destination).openWrite();
+
+    try {
+      final stream = remoteFile.read();
+      await stream.forEach(localFile.add);
+    } catch (e) {
+      rethrow;
+    } finally {
+      await remoteFile.close();
+      await localFile.close();
+    }
+  }
+
+  static Future<String> uploadFile({
+    required String name,
+    required String sourcePath,
+  }) async {
+    if (client == null) {
+      throw Exception('No SSH client connected.');
+    }
+
+    final sftp = await client!.sftp();
+    final filePath = '$currentDirectory/$name';
+    print('Uploading $filePath');
+
+    try {
+      // Open the remote file in write mode
+      final remoteFile = await sftp.open(
+        filePath,
+        mode: SftpFileOpenMode.write | SftpFileOpenMode.create | SftpFileOpenMode.truncate,
+      );
+
+      // Read the local file as bytes
+      final localFile = File(sourcePath);
+      if (!await localFile.exists()) {
+        throw Exception('Source file does not exist: $sourcePath');
+      }
+
+      // Convert the local file bytes to a Stream<Uint8List>
+      final fileBytes = await localFile.readAsBytes();
+      final fileStream = Stream<Uint8List>.fromIterable(
+        [Uint8List.fromList(fileBytes)],
+      );
+
+      // Write the stream to the remote file
+      await remoteFile.write(fileStream);
+
+      // Close the remote file
+      await remoteFile.close();
+      return "File Uploaded Succesfully";
+    } catch (e) {
+      return 'Failed to upload file: $e';
+    }
+  }
+
+  static Future<String> uploadFolder({
+    required String folderPath,
+    required String remoteFolderPath,
+  }) async {
+    if (client == null) {
+      throw Exception('No SSH client connected.');
+    }
+
+    final sftp = await client!.sftp();
+    final dir = Directory(folderPath);
+
+    if (!await dir.exists()) {
+      return 'The specified folder does not exist: $folderPath';
+    }
+
+    try {
+      // Create the remote folder if it does not exist
+      await sftp.mkdir(remoteFolderPath);
+
+      // Iterate over all files and subdirectories in the local folder
+      await for (var entity in dir.list(recursive: true, followLinks: false)) {
+        final relativePath = entity.path.substring(folderPath.length + 1);
+        final remotePath = '$remoteFolderPath/$relativePath';
+
+        if (entity is File) {
+          // Upload each file
+          await uploadFile(name: relativePath, sourcePath: entity.path);
+        } else if (entity is Directory) {
+          // Create subdirectories on the remote server
+          await sftp.mkdir(remotePath);
+        }
+      }
+
+      return "Folder uploaded successfully.";
+    } catch (e) {
+      return 'Failed to upload folder: $e';
+    }
+  }
+
+  static Future<void> extractFile({
+    required String name,
+  }) async {
+    final directory = await getTemporaryDirectory();
+    final  filePath = '${directory.path}/extract.zip';
+    final  extractPath = '${directory.path}/extract';
+    await downloadFile(name: name, destination: filePath);
+
+    final targetDir = Directory(extractPath);
+    if (!targetDir.existsSync()) {
+      targetDir.createSync();
+    }
+    final bytes = File(filePath).readAsBytesSync();
+    final archive = ZipDecoder().decodeBytes(bytes);
+    for (final file in archive) {
+      final filename = file.name;
+      final filePath = '${targetDir.path}/$filename';
+      final outFile = File(filePath);
+
+      await outFile.create(recursive: true);
+      await outFile.writeAsBytes(file.content as List<int>);
+    }
+    uploadFolder(folderPath: extractPath, remoteFolderPath: '$currentDirectory/$name');
   }
 }
