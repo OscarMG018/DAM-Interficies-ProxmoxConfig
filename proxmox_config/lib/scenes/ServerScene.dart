@@ -4,7 +4,9 @@ import '../models/FileData.dart';
 import '../utils/SSHUtils.dart';
 import '../widgets/FileDisplay.dart';
 import '../widgets/ListWithTitle.dart';
-import 'package:url_launcher/url_launcher.dart';
+import '../widgets/FileInfo.dart';
+
+enum _FileSorting { name, size, lastModified }
 
 class ServerScene extends StatefulWidget {
 
@@ -20,6 +22,7 @@ class _ServerSceneState extends State<ServerScene> {
   List<FileData> files = [];
   bool isLoading = true;
   bool showHidden = false;
+  _FileSorting sorting = _FileSorting.name;
 
   @override
   void initState() {
@@ -63,6 +66,8 @@ class _ServerSceneState extends State<ServerScene> {
       _handleInfo(file);
     } else if (action == 'Download') {
       _handleDownload(file);
+    } else if (action == 'Extract') {
+      _handleExtract(file);
     }
   }
 
@@ -116,7 +121,16 @@ class _ServerSceneState extends State<ServerScene> {
   }
 
   void _handleInfo(FileData file) {
-    // TODO: Load more info about the file
+    //show a dialog with the info: name, folder/extension, size, last modified, owner, permissions
+    showDialog(
+      context: context,
+      builder: (context) => FileInfo(file: file),
+    );
+  }
+
+  void _handleExtract(FileData file) {
+    SSHUtils.extractFile(name: file.name);
+    _loadFiles();
   }
 
   void _handleFileDoubleClick(file) {
@@ -159,6 +173,48 @@ class _ServerSceneState extends State<ServerScene> {
     _loadFiles();
   }
 
+  List<FileDisplay> _getFiles() {
+    //Sort files firts
+    if (sorting == _FileSorting.name) {
+      files.sort((a, b) => a.name.compareTo(b.name));
+    } else if (sorting == _FileSorting.size) {
+      files.sort((a, b) => a.size.compareTo(b.size));
+    } else if (sorting == _FileSorting.lastModified) {
+      files.sort((a, b) => a.lastModified.compareTo(b.lastModified));
+    }
+    List<FileDisplay> fileList = [];
+    for (FileData file in files) {
+      if (file.isFolder) {
+        fileList.add(FileDisplay(
+          fileName: file.name,
+          assetImagePath: file.getImagePath(),
+          actions: const ['Rename', 'Delete','Info', 'Download'],
+          onActionSelected: (action) => _handleFileAction(action, file),
+          onDoubleClick: () => _handleFileDoubleClick(file),
+        ));
+      }
+      else if (file.extension == 'zip') {
+        fileList.add(FileDisplay(
+          fileName: file.name,
+          assetImagePath: file.getImagePath(),
+          actions: const ['Rename', 'Delete','Info', 'Download', 'Extract'],
+          onActionSelected: (action) => _handleFileAction(action, file),
+          onDoubleClick: () => _handleFileDoubleClick(file),
+        ));
+      }
+      else {
+        fileList.add(FileDisplay(
+          fileName: file.name,
+          assetImagePath: file.getImagePath(),
+          actions: const ['Rename', 'Delete','Info', 'Download'],
+          onActionSelected: (action) => _handleFileAction(action, file),
+          onDoubleClick: () => _handleFileDoubleClick(file),
+        ));
+      }
+    }
+    return fileList;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -172,13 +228,7 @@ class _ServerSceneState extends State<ServerScene> {
                 ? const Center(child: CircularProgressIndicator())
                 : ListWithTitle(
                     title: 'Files',
-                    items: files.map((file) => FileDisplay(
-                      fileName: file.name,
-                      assetImagePath: file.getImagePath(),
-                      actions: const ['Rename', 'Delete','Info', 'Download'],
-                      onActionSelected: (action) => _handleFileAction(action, file),
-                      onDoubleClick: () => _handleFileDoubleClick(file),
-                    )).toList(),
+                    items: _getFiles(),
                   ),
             ),
             const SizedBox(height: 16),
@@ -202,6 +252,14 @@ class _ServerSceneState extends State<ServerScene> {
                     _loadFiles();
                   },
                   child: const Text('Refresh'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      sorting = _FileSorting.values[(sorting.index + 1) % _FileSorting.values.length];
+                    });
+                  },
+                  child: Text('Sort by ${sorting.name}'),
                 ),
                 Row(children: [
                   Checkbox(

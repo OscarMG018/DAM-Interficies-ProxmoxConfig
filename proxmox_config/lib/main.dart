@@ -22,24 +22,19 @@ class MainApp extends StatelessWidget {
 }
 
 /* 
-
-Session 3 -
-extract rar/zip files
-
-
 Session 4 -
-show info
-order files
-scene for configuring prot redirections
-redirection custom widget
+show info [DONE]
+order files [DONE]
+redirection custom dialog [PLANED]
 
 Session 5 -
+fix extract rar/zip files bugs
+BugFixes
+
+Session 6 
 detect nodeJS servers
 detect jar files
 Able to run the server, stop it, restart it
-
-Session 6 
-BugFixes
 
 Session 7 -
 Beutify

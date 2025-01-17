@@ -90,9 +90,17 @@ class SSHUtils {
         final parts = line.split(RegExp(r'\s+')).where((part) => part.isNotEmpty).toList();
         if (parts.length < 9) return null;
 
+        final permissions = parts[0];
+        final isFolder = permissions.startsWith('d');
+        final owner = parts[2];
+        final size = int.tryParse(parts[4]) ?? 0;
+
+        // Parse the last modified date and time
+        final dateString = "${parts[5]} ${parts[6]} ${parts[7]}";
+        final lastModified = DateTime.tryParse(dateString) ?? DateTime.now();
+
         final name = parts.sublist(8).join(' ');
-        final isFolder = line.startsWith('d');
-        
+
         final lastDotIndex = name.lastIndexOf('.');
         final extension = lastDotIndex != -1 && !isFolder
             ? name.substring(lastDotIndex + 1)
@@ -102,11 +110,12 @@ class SSHUtils {
           name: name,
           extension: extension,
           isFolder: isFolder,
+          size: size,
+          lastModified: lastModified,
+          owner: owner,
+          permissions: permissions,
         );
-      })
-      .where((file) => file != null)
-      .cast<FileData>()
-      .toList();
+      }).where((file) => file != null).cast<FileData>().toList();
     } catch (e) {
       throw Exception('Failed to get directory contents: $e');
     }
