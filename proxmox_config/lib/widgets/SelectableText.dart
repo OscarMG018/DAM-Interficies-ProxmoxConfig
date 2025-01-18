@@ -4,28 +4,26 @@ class SelectableText extends StatefulWidget {
   final String text;
   final Size size;
   final VoidCallback? onClick;
+  final bool isSelected;
 
   const SelectableText({
     required this.text,
     this.size = const Size(200, 50),
     this.onClick,
+    this.isSelected = false,
     Key? key,
   }) : super(key: key);
 
+  void setSelected(bool isSelected) {
+    isSelected = isSelected;
+    createState();
+  }
+
   @override
   State<SelectableText> createState() => _SelectableTextState();
-
-  static GlobalKey<_SelectableTextState> selectableTextKey = GlobalKey<_SelectableTextState>();
 }
 
 class _SelectableTextState extends State<SelectableText> {
-  bool _isSelected = false;
-
-  void setSelected(bool isSelected) {
-    setState(() {
-      _isSelected = isSelected;
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +34,7 @@ class _SelectableTextState extends State<SelectableText> {
         }
       },
       child: CustomPaint(
-        painter: CustomSelectableTextPainter(isSelected: _isSelected),
+        painter: CustomSelectableTextPainter(isSelected: widget.isSelected),
         child: Container(
           width: widget.size.width,
           height: widget.size.height,

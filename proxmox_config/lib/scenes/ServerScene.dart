@@ -5,6 +5,7 @@ import '../utils/SSHUtils.dart';
 import '../widgets/FileDisplay.dart';
 import '../widgets/ListWithTitle.dart';
 import '../widgets/FileInfo.dart';
+import '../widgets/PortRedirectionDialog.dart';
 
 enum _FileSorting { name, size, lastModified }
 
@@ -173,6 +174,13 @@ class _ServerSceneState extends State<ServerScene> {
     _loadFiles();
   }
 
+  void _showRedirectionDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => const PortRedirectionDialog(),
+    );
+  }
+
   List<FileDisplay> _getFiles() {
     //Sort files firts
     if (sorting == _FileSorting.name) {
@@ -260,6 +268,12 @@ class _ServerSceneState extends State<ServerScene> {
                     });
                   },
                   child: Text('Sort by ${sorting.name}'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    _showRedirectionDialog();
+                  },
+                  child: Text('Show Port Redirection'),
                 ),
                 Row(children: [
                   Checkbox(

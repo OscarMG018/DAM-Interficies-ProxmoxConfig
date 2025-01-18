@@ -185,12 +185,8 @@ class _ConfigSceneState extends State<ConfigScene> {
       proxmoxSelectableText.SelectableText selectableText = proxmoxSelectableText.SelectableText(
         text: config.name,
         onClick: () => SetActive(config),
+        isSelected: activeConfiguration == config,
       );
-      if (config.favorite) {
-        //proxmoxSelectableText.SelectableText.selectableTextKey.currentState!.setSelected(true);
-      } else{
-        //proxmoxSelectableText.SelectableText.selectableTextKey.currentState!.setSelected(false);
-      }
       favoriteText.add(selectableText);
     }
 
@@ -198,12 +194,8 @@ class _ConfigSceneState extends State<ConfigScene> {
       proxmoxSelectableText.SelectableText selectableText = proxmoxSelectableText.SelectableText(
         text: config.name,
         onClick: () => SetActive(config),
+        isSelected: activeConfiguration == config,
       );
-      if (config.favorite) {
-        //proxmoxSelectableText.SelectableText.selectableTextKey.currentState!.setSelected(true);
-      } else{
-        //proxmoxSelectableText.SelectableText.selectableTextKey.currentState!.setSelected(false);
-      }
       otherText.add(selectableText);
     }
 
@@ -248,28 +240,29 @@ class _ConfigSceneState extends State<ConfigScene> {
                   child: ListWithTitle(
                     title: "Configuracio SSH",
                     items: [...getConfigurationFields(),const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        CustomButton(
-                          text: "Delete",
-                          color: Colors.red,
-                          onPressed: deleteConfiguration,
-                        ), 
-                        const SizedBox(width: 10),
-                        CustomButton(
-                          text: "Add to favoirites",
-                          color: Colors.yellow,
-                          onPressed: setFavorite,
-                          textStyle: const TextStyle(color: Colors.black),
-                        ), 
-                        const SizedBox(width: 10),
-                        CustomButton(
-                          text: "Connect",
-                          color: Colors.lightGreen,
-                          onPressed: connectToServer,
-                        ), 
-                      ],
-                    ),],
+                    if (activeConfiguration != null)
+                      Row(
+                        children: [
+                          CustomButton(
+                            text: "Delete",
+                            color: Colors.red,
+                            onPressed: deleteConfiguration,
+                          ), 
+                          const SizedBox(width: 10),
+                          CustomButton(
+                            text: "Add to favoirites",
+                            color: Colors.yellow,
+                            onPressed: setFavorite,
+                            textStyle: const TextStyle(color: Colors.black),
+                          ), 
+                          const SizedBox(width: 10),
+                          CustomButton(
+                            text: "Connect",
+                            color: Colors.lightGreen,
+                            onPressed: connectToServer,
+                          ), 
+                        ],
+                      ),],
                   ),
                 ),
                 

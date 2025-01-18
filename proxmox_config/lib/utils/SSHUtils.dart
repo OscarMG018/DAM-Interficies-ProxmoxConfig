@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:dartssh2/dartssh2.dart';
+import 'package:proxmox_config/models/RedirectionData.dart';
 import '../models/FileData.dart';
 import 'dart:io';
 import 'dart:typed_data';
@@ -37,10 +38,13 @@ class SSHUtils {
   static Future<({String stdout, String stderr})> executeCommand({
     required String command,
   }) async {
+    print(command);
     try {
       final session = await SSHUtils.client!.execute(command);
       final stdout = await utf8.decodeStream(session.stdout);
       final stderr = await utf8.decodeStream(session.stderr);
+      print(stdout);
+      print(stderr);
       session.close();
       return (stdout: stdout, stderr: stderr);
     } catch (e) {
@@ -48,8 +52,8 @@ class SSHUtils {
     }
   }
 
-  static void disconnect(SSHClient client) {
-    client.close();
+  static void disconnect() {
+    client!.close();
   }
 
   static void changeDirectory({required String path}) {
@@ -115,7 +119,7 @@ class SSHUtils {
           owner: owner,
           permissions: permissions,
         );
-      }).where((file) => file != null).cast<FileData>().toList();
+      }).where((file) => file != null && file.name != "." && file.name != "..").cast<FileData>().toList();
     } catch (e) {
       throw Exception('Failed to get directory contents: $e');
     }
@@ -278,4 +282,45 @@ class SSHUtils {
     }
     uploadFolder(folderPath: extractPath, remoteFolderPath: '$currentDirectory/$name');
   }
+
+  static Future<List<RedirectionData>> getRedirections() async {
+    List<RedirectionData> redirections = [];
+    final result = await executeCommand(
+        command: 'sudo iptables -t nat -L PREROUTING -n -v');
+    
+    if (result.stderr.isNotEmpty) {
+      throw Exception('Error executing command: ${result.stderr}');
+    }
+
+    final lines = result.stdout.split('\n');
+    final regex = RegExp(
+        r'(?<protocol>\S+)\s+(?<dport>\d+)\s+(?<target>\S+)\s+(?<tport>\d+)');
+
+    for (final line in lines) {
+      final match = regex.firstMatch(line);
+      if (match != null) {
+        try {
+          final dport = int.parse(match.namedGroup('dport')!);
+          final tport = int.parse(match.namedGroup('tport')!);
+          redirections.add(RedirectionData(dport: dport, tport: tport));
+        } catch (e) {
+          throw Exception('Failed to get directory contents: $e');
+        }
+      }
+    }
+
+    return redirections;
+  }
+
+  static Future<void> saveRedirections(List<RedirectionData> redirections) async {
+    // Delete all existing redirection
+    await executeCommand(command: 'sudo iptables -t nat -F');
+
+    // Add all redirections
+    for (final redirection in redirections) {
+        await executeCommand(
+            command: 'sudo iptables -t nat -A PREROUTING --dport ${redirection.dport??""} -j REDIRECT --to-port ${redirection.tport??""}');
+    }
+  }
+
 }

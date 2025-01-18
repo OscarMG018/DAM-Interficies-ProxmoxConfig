@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:proxmox_config/models/FileData.dart';
-import 'dart:math';
+import 'dart:math' as math;
 
 class FileInfo extends StatelessWidget {
   final FileData file;
@@ -167,7 +167,7 @@ class FileInfoPainter extends CustomPainter {
         Offset(padding + labelPainter.width, yOffset),
       );
 
-      yOffset += valuePainter.height > lineHeight ? valuePainter.height : lineHeight;
+      yOffset += math.max(valuePainter.height, lineHeight);
     }
   }
 
