@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:proxmox_config/models/RedirectionData.dart';
+import 'package:proxmox_config/widgets/CustomButton.dart';
 import 'package:proxmox_config/widgets/ListWithTitle.dart';
 import 'package:proxmox_config/utils/SSHUtils.dart';
 import 'package:proxmox_config/widgets/PortRedirectionDisplay.dart';
@@ -50,25 +51,26 @@ class _PortRedirectionDialogState extends State<PortRedirectionDialog> {
             ] : 
             redirections!.map((e) => PortRedirectionDisplay(onChanged: (data) => onChanged(data,e), initialData: e)).toList()
           ),
-          Row(children: [
-            Expanded(
-              child: ElevatedButton(
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            spacing: 16,
+            children: [
+              CustomButton(
+                text: 'Cancel',
+                color: Colors.blue,
                 onPressed: () {
                   Navigator.pop(context);
                 },
-                child: const Text('Cancel'),
               ),
-            ),
-            Expanded(
-              child: ElevatedButton(
+              CustomButton(
                 onPressed: () {
                   _saveRedirections();
                   //Navigator.pop(context);
                 },
-                child: const Text('Accept'),
+                text: 'Save',
+                color: Colors.blue,
               ),
-            ),
-          ],
+            ],
           )
         ],
         ) 

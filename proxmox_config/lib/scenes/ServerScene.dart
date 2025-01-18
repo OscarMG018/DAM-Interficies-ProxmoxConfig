@@ -1,5 +1,8 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:proxmox_config/widgets/CustomButton.dart';
+import 'package:proxmox_config/widgets/CustomCheckboxWithText.dart';
+import 'package:proxmox_config/widgets/LabeledTextField.dart';
 import '../models/FileData.dart';
 import '../utils/SSHUtils.dart';
 import '../widgets/FileDisplay.dart';
@@ -73,44 +76,40 @@ class _ServerSceneState extends State<ServerScene> {
   }
 
   void _handleRename(FileData file) {
-    String newName = file.name;
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Rename'),
-          content: TextField(
-            controller: TextEditingController(text: newName),
-            autofocus: true,
-            decoration: const InputDecoration(
-              labelText: 'New name',
-            ),
-            onChanged: (value) {
-              newName = value;
-            },
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                print(newName);
-                if (newName == file.name) {
-                  Navigator.pop(context);
-                  return;
-                }
-                SSHUtils.renameFile(oldName: file.name, newName: newName);
-                _loadFiles();
-                Navigator.pop(context);
-              },
-              child: const Text('Rename'),
-            ),
-          ],
+    TextEditingController controller = TextEditingController(text: file.name);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Rename'),
+        content: LabeledTextField(
+          label: "New name",
+          controller: controller,
         ),
-      );
+        actions: [
+          CustomButton(
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            text: 'Cancel',
+            color: Colors.blue,
+          ),
+          CustomButton(
+            onPressed: () {
+              print(controller.text);
+              if (controller.text == file.name) {
+                Navigator.pop(context);
+                return;
+              }
+              SSHUtils.renameFile(oldName: file.name, newName: controller.text);
+              _loadFiles();
+              Navigator.pop(context);
+            },
+            text: 'Rename',
+            color: Colors.blue,
+          ),
+        ],
+      ),
+    );
   }
 
   void _handleDownload(FileData file) async {
@@ -226,65 +225,64 @@ class _ServerSceneState extends State<ServerScene> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        color: Colors.white,
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Expanded(
-              child: isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : ListWithTitle(
-                    title: 'Files',
-                    items: _getFiles(),
+      body: Expanded(
+        child: Container(
+          color: Colors.white,
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              Expanded(
+                child: isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : ListWithTitle(
+                      title: 'Files',
+                      items: _getFiles(),
+                    ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  CustomButton(
+                    onPressed: _back,
+                    text: 'Back',
+                    color: Colors.blue,
                   ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                ElevatedButton(
-                  onPressed: () {
-                    _back();
-                  },
-                  child: const Text('Back'),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    _uploadFile();
-                  },
-                  child: const Text('Upload'),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    _loadFiles();
-                  },
-                  child: const Text('Refresh'),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    setState(() {
-                      sorting = _FileSorting.values[(sorting.index + 1) % _FileSorting.values.length];
-                    });
-                  },
-                  child: Text('Sort by ${sorting.name}'),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    _showRedirectionDialog();
-                  },
-                  child: Text('Show Port Redirection'),
-                ),
-                Row(children: [
-                  Checkbox(
-                    value: showHidden,
+                  CustomButton(
+                    onPressed: _uploadFile,
+                    text: 'Upload',
+                    color: Colors.blue,
+                  ),
+                  CustomButton(
+                    onPressed: _loadFiles,
+                    text: 'Refresh',
+                    color: Colors.blue,
+                  ),
+                  CustomButton(
+                    onPressed: () {
+                      setState(() {
+                        sorting = _FileSorting.values[(sorting.index + 1) % _FileSorting.values.length];
+                      });
+                    },
+                    text: 'Sort by ${sorting.name}',
+                    color: Colors.blue,
+                  ),
+                  CustomButton(
+                    onPressed: () {
+                      _showRedirectionDialog();
+                    },
+                    text: 'Show Port Redirection',
+                    color: Colors.blue,
+                  ),
+                  CustomCheckboxWithText(
+                    isChecked: showHidden,
+                    text: 'Show Hidden Files',
                     onChanged: _showHiddenFiles,
                   ),
-                  const Text('Show Hidden Files'),
-                ]),
-              ],
-            ),
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

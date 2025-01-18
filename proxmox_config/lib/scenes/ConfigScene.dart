@@ -218,58 +218,60 @@ class _ConfigSceneState extends State<ConfigScene> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Flexible(
-            flex: 1,
-            child: ListWithTitle(
-              title: "Servidors",
-              items: getSelectableText(),
+    return Expanded(
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Flexible(
+              flex: 1,
+              child: ListWithTitle(
+                title: "Servidors",
+                items: getSelectableText(),
+              ),
             ),
-          ),
-          SizedBox(width: 16),
-          Flexible(
-            flex: 2,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: ListWithTitle(
-                    title: "Configuracio SSH",
-                    items: [...getConfigurationFields(),const SizedBox(height: 10),
-                    if (activeConfiguration != null)
-                      Row(
-                        children: [
-                          CustomButton(
-                            text: "Delete",
-                            color: Colors.red,
-                            onPressed: deleteConfiguration,
-                          ), 
-                          const SizedBox(width: 10),
-                          CustomButton(
-                            text: "Add to favoirites",
-                            color: Colors.yellow,
-                            onPressed: setFavorite,
-                            textStyle: const TextStyle(color: Colors.black),
-                          ), 
-                          const SizedBox(width: 10),
-                          CustomButton(
-                            text: "Connect",
-                            color: Colors.lightGreen,
-                            onPressed: connectToServer,
-                          ), 
-                        ],
-                      ),],
+            SizedBox(width: 16),
+            Flexible(
+              flex: 2,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: ListWithTitle(
+                      title: "Configuracio SSH",
+                      items: [...getConfigurationFields(),const SizedBox(height: 10),
+                      if (activeConfiguration != null)
+                        Row(
+                          children: [
+                            CustomButton(
+                              text: "Delete",
+                              color: Colors.red,
+                              onPressed: deleteConfiguration,
+                            ), 
+                            const SizedBox(width: 10),
+                            CustomButton(
+                              text: "Add to favoirites",
+                              color: Colors.yellow,
+                              onPressed: setFavorite,
+                              textStyle: const TextStyle(color: Colors.black),
+                            ), 
+                            const SizedBox(width: 10),
+                            CustomButton(
+                              text: "Connect",
+                              color: Colors.lightGreen,
+                              onPressed: connectToServer,
+                            ), 
+                          ],
+                        ),],
+                    ),
                   ),
-                ),
-                
-              ],
+                  
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
