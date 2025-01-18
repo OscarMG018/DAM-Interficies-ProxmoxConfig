@@ -53,7 +53,6 @@ class _PortRedirectionDialogState extends State<PortRedirectionDialog> {
           ),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            spacing: 16,
             children: [
               CustomButton(
                 text: 'Cancel',

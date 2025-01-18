@@ -17,7 +17,7 @@ class ListWithTitle extends StatefulWidget {
 class _ListWithTitle extends State<ListWithTitle> {
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return SingleChildScrollView(child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Títol en negreta
@@ -32,6 +32,7 @@ class _ListWithTitle extends State<ListWithTitle> {
               child: item,
             )),
       ],
+    )
     );
   }
 }

@@ -242,7 +242,9 @@ class _ConfigSceneState extends State<ConfigScene> {
                       title: "Configuracio SSH",
                       items: [...getConfigurationFields(),const SizedBox(height: 10),
                       if (activeConfiguration != null)
-                        Row(
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
                           children: [
                             CustomButton(
                               text: "Delete",
@@ -263,7 +265,8 @@ class _ConfigSceneState extends State<ConfigScene> {
                               onPressed: connectToServer,
                             ), 
                           ],
-                        ),],
+                        ),
+                      )],
                     ),
                   ),
                   

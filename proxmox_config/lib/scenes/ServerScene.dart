@@ -240,46 +240,49 @@ class _ServerSceneState extends State<ServerScene> {
                     ),
               ),
               const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  CustomButton(
-                    onPressed: _back,
-                    text: 'Back',
-                    color: Colors.blue,
-                  ),
-                  CustomButton(
-                    onPressed: _uploadFile,
-                    text: 'Upload',
-                    color: Colors.blue,
-                  ),
-                  CustomButton(
-                    onPressed: _loadFiles,
-                    text: 'Refresh',
-                    color: Colors.blue,
-                  ),
-                  CustomButton(
-                    onPressed: () {
-                      setState(() {
-                        sorting = _FileSorting.values[(sorting.index + 1) % _FileSorting.values.length];
-                      });
-                    },
-                    text: 'Sort by ${sorting.name}',
-                    color: Colors.blue,
-                  ),
-                  CustomButton(
-                    onPressed: () {
-                      _showRedirectionDialog();
-                    },
-                    text: 'Show Port Redirection',
-                    color: Colors.blue,
-                  ),
-                  CustomCheckboxWithText(
-                    isChecked: showHidden,
-                    text: 'Show Hidden Files',
-                    onChanged: _showHiddenFiles,
-                  ),
-                ],
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    CustomButton(
+                      onPressed: _back,
+                      text: 'Back',
+                      color: Colors.blue,
+                    ),
+                    CustomButton(
+                      onPressed: _uploadFile,
+                      text: 'Upload',
+                      color: Colors.blue,
+                    ),
+                    CustomButton(
+                      onPressed: _loadFiles,
+                      text: 'Refresh',
+                      color: Colors.blue,
+                    ),
+                    CustomButton(
+                      onPressed: () {
+                        setState(() {
+                          sorting = _FileSorting.values[(sorting.index + 1) % _FileSorting.values.length];
+                        });
+                      },
+                      text: 'Sort by ${sorting.name}',
+                      color: Colors.blue,
+                    ),
+                    CustomButton(
+                      onPressed: () {
+                        _showRedirectionDialog();
+                      },
+                      text: 'Show Port Redirection',
+                      color: Colors.blue,
+                    ),
+                    CustomCheckboxWithText(
+                      isChecked: showHidden,
+                      text: 'Show Hidden Files',
+                      onChanged: _showHiddenFiles,
+                    ),
+                  ],
+                )
               ),
             ],
           ),
