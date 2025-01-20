@@ -49,7 +49,6 @@ class _ServerSceneState extends State<ServerScene> {
   }
 
   List<String> getFileActions(FileData file) {
-    List<String> actions = [];
     if (file.isFolder) {
       return const ['Rename', 'Delete','Info', 'Download'];
     } else if (file.extension == 'zip' || file.extension == 'rar') {
@@ -128,8 +127,9 @@ class _ServerSceneState extends State<ServerScene> {
     );
   }
 
-  void _handleExtract(FileData file) {
-    SSHUtils.extractFile(name: file.name);
+  void _handleExtract(FileData file) async {
+    String result = await SSHUtils.extractFile(name: file.name);
+    _showSnackBar(message: result);
     _loadFiles();
   }
 

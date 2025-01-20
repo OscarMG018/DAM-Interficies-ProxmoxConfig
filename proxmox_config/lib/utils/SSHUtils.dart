@@ -4,8 +4,7 @@ import 'package:proxmox_config/models/RedirectionData.dart';
 import '../models/FileData.dart';
 import 'dart:io';
 import 'dart:typed_data';
-import 'package:path_provider/path_provider.dart';
-import 'package:archive/archive.dart';
+
 class SSHUtils {
   static Utf8Codec utf8 = const Utf8Codec();
   static String currentDirectory = '/home';
@@ -258,29 +257,23 @@ class SSHUtils {
     }
   }
 
-  static Future<void> extractFile({
+  static Future<String> extractFile({
     required String name,
   }) async {
-    final directory = await getTemporaryDirectory();
-    final  filePath = '${directory.path}/extract.zip';
-    final  extractPath = '${directory.path}/extract';
-    await downloadFile(name: name, destination: filePath);
-
-    final targetDir = Directory(extractPath);
-    if (!targetDir.existsSync()) {
-      targetDir.createSync();
+    final result = await executeCommand(
+        command: 'which unzip');
+    if (result.stderr.isNotEmpty) {
+      throw Exception('Error executing command: ${result.stderr}');
     }
-    final bytes = File(filePath).readAsBytesSync();
-    final archive = ZipDecoder().decodeBytes(bytes);
-    for (final file in archive) {
-      final filename = file.name;
-      final filePath = '${targetDir.path}/$filename';
-      final outFile = File(filePath);
-
-      await outFile.create(recursive: true);
-      await outFile.writeAsBytes(file.content as List<int>);
+    if (result.stdout.isEmpty || result.stdout.contains('not found') || result.stdout.contains('no unzip')) {
+      return 'unzip not found on the server';
     }
-    uploadFolder(folderPath: extractPath, remoteFolderPath: '$currentDirectory/$name');
+    final String filePath = currentDirectory + "/" + name;
+    final extractResult = await executeCommand( command: "unzip $filePath");
+    if (extractResult.stderr.isNotEmpty) {
+      throw Exception('Error extracting file: ${extractResult.stderr}');
+    }
+    return "File extracted successfully.";
   }
 
   static Future<List<RedirectionData>> getRedirections() async {
