@@ -1,14 +1,17 @@
 import 'dart:convert';
 import 'package:dartssh2/dartssh2.dart';
 import 'package:proxmox_config/models/RedirectionData.dart';
+import 'package:proxmox_config/models/ServerType.dart';
 import '../models/FileData.dart';
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:proxmox_config/models/ServerData.dart';
 
 class SSHUtils {
   static Utf8Codec utf8 = const Utf8Codec();
   static String currentDirectory = '/home';
   static SSHClient? client;
+  static const String SERER_DETECT_DIR = '/home';
 
   static Future<void> connect({
     required String host,
@@ -42,10 +45,18 @@ class SSHUtils {
       final session = await SSHUtils.client!.execute(command);
       final stdout = await utf8.decodeStream(session.stdout);
       final stderr = await utf8.decodeStream(session.stderr);
-      print(stdout);
-      print(stderr);
+      print("stdout: $stdout");
+      print("stderr: $stderr");
       session.close();
       return (stdout: stdout, stderr: stderr);
+    } catch (e) {
+      throw Exception('Error executing command "$command": $e');
+    }
+  }
+
+  static Future<void> executeCommandWithoutResult({required String command}) async {
+    try {
+      SSHUtils.client!.execute(command);
     } catch (e) {
       throw Exception('Error executing command "$command": $e');
     }
@@ -314,6 +325,82 @@ class SSHUtils {
         await executeCommand(
             command: 'sudo iptables -t nat -A PREROUTING --dport ${redirection.dport??""} -j REDIRECT --to-port ${redirection.tport??""}');
     }
+  }
+
+  static Future<ServerData?> DetectServers() async {
+    //Detect node servers
+    var result = await executeCommand(command: 'find $SERER_DETECT_DIR -type f -name "package.json" -exec dirname {} \\;');
+    if (result.stderr.isNotEmpty) {
+      throw Exception(result.stderr);
+    }
+    if (result.stdout.isNotEmpty) {
+      return ServerData(
+        isRunning: false,
+        type: ServerType.node,
+        pid: null,
+        path: result.stdout.trim().split("\n").first,
+      );
+    }
+    //Detect jar servers
+    result = await executeCommand(command: 'find $SERER_DETECT_DIR -type f -name "*.jar"');
+    if (result.stderr.isNotEmpty) {
+      throw Exception(result.stderr);
+    }
+    if (result.stdout.isNotEmpty) {
+      return ServerData(
+        isRunning: false,
+        type: ServerType.java,
+        pid: null,
+        path: result.stdout.trim().split("\n").first,
+      );
+    }
+    return null;
+  }
+
+  static Future<void> startServer(ServerData server) async {
+    final nodeInstalled  = await executeCommand(command: 'which node');
+    if (server.type == ServerType.node && nodeInstalled.stderr.isNotEmpty) {
+      throw Exception('Node not found on the server');
+    }
+    final jarInstalled  = await executeCommand(command: 'which java');
+    if (server.type == ServerType.java && jarInstalled.stderr.isNotEmpty) {
+      throw Exception('Java not found on the server');
+    }
+    if (server.type == ServerType.node) {
+      final nodeResult = await executeCommand(command: 'no \$!');
+      if (nodeResult.stderr.isNotEmpty) {
+        throw Exception('Error starting node server: ${nodeResult.stderr}');
+      }
+      server.pid = int.parse(nodeResult.stdout.trim());
+    }
+    else if (server.type == ServerType.java) {
+      executeCommandWithoutResult(command: 'nohup java -jar ${server.path} > /dev/null 2>&1 &');
+      final jarResult = await executeCommand(command: 'ps -ef | grep ${server.path} | grep -v grep | awk \'{print \$2}\'');
+      if (jarResult.stderr.isNotEmpty) {
+        throw Exception('Error starting java server: ${jarResult.stderr}');
+      }
+      print(jarResult.stdout);
+      //[1] 6118
+      server.pid = int.parse(jarResult.stdout.split(' ').last);
+    }
+    server.isRunning = true;
+  }
+
+  static Future<void> stopServer(ServerData server) async {
+    if (server.pid == null) {
+      throw Exception('Server has no PID');
+    }
+    final result = await executeCommand(command: 'kill ${server.pid}');
+    if (result.stderr.isNotEmpty) {
+      throw Exception('Error stopping server: ${result.stderr}');
+    }
+    server.isRunning = false;
+    server.pid = null;
+  }
+
+  static Future<void> restartServer(ServerData server) async {
+    await stopServer(server);
+    await startServer(server);
   }
 
 }

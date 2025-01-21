@@ -8,6 +8,8 @@ import '../utils/SSHUtils.dart';
 import '../widgets/FileDisplay.dart';
 import '../widgets/ListWithTitle.dart';
 import '../widgets/FileInfo.dart';
+import '../widgets/ServerStatus.dart';
+import '../models/ServerData.dart';
 import '../widgets/PortRedirectionDialog.dart';
 
 enum _FileSorting { name, size, lastModified }
@@ -27,11 +29,27 @@ class _ServerSceneState extends State<ServerScene> {
   bool isLoading = true;
   bool showHidden = false;
   _FileSorting sorting = _FileSorting.name;
+  ServerData? server;
 
   @override
   void initState() {
     super.initState();
     _loadFiles();
+    _loadServer();
+  }
+
+  Future<void> _loadServer() async {
+    setState(() => isLoading = true);
+    try {
+      server = await SSHUtils.DetectServers();
+      print("Server detected: ${server?.type}");
+      setState(() {
+        isLoading = false;
+      });
+    } catch (e) {
+      print('Error loading server: $e');
+      setState(() => isLoading = false);
+    }
   }
 
   Future<void> _loadFiles() async {
@@ -222,6 +240,39 @@ class _ServerSceneState extends State<ServerScene> {
     return fileList;
   }
 
+  void _startServer() async {
+    setState(() => isLoading = true);
+    try {
+      await SSHUtils.startServer(server!);
+      setState(() => isLoading = false);
+    } catch (e) {
+      print('Error starting server: $e');
+      setState(() => isLoading = false);
+    }
+  }
+
+  void _stopServer() async {
+    setState(() => isLoading = true);
+    try {
+      await SSHUtils.stopServer(server!);
+      setState(() => isLoading = false);
+    } catch (e) {
+      print('Error stopping server: $e');
+      setState(() => isLoading = false);
+    }
+  }
+
+  void _restartServer() async {
+    setState(() => isLoading = true);
+    try {
+      await SSHUtils.restartServer(server!);
+      setState(() => isLoading = false);
+    } catch (e) {
+      print('Error restarting server: $e');
+      setState(() => isLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -231,6 +282,13 @@ class _ServerSceneState extends State<ServerScene> {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
+              if (server != null)
+                ServerStatus(isRunning: server!.isRunning, serverType: server!.type,
+                  onStart: () => _startServer(),
+                  onStop: () => _stopServer(),
+                  onRestart: () => _restartServer()
+                ),
+                const SizedBox(height: 16),
               Expanded(
                 child: isLoading
                   ? const Center(child: CircularProgressIndicator())
