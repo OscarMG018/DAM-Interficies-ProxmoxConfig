@@ -371,11 +371,65 @@ class SSHUtils {
       throw Exception('Java not found on the server');
     }
     if (server.type == ServerType.node) {
-      final nodeResult = await executeCommand(command: 'no \$!');
-      if (nodeResult.stderr.isNotEmpty) {
-        throw Exception('Error starting node server: ${nodeResult.stderr}');
+      // Check for Node.js installation
+      final nodeInstalled = await executeCommand(command: 'which node');
+      if (nodeInstalled.stderr.isNotEmpty) {
+        throw Exception('Node not found on the server');
       }
-      server.pid = int.parse(nodeResult.stdout.trim());
+
+      // Kill any existing instances
+      await executeCommand(
+        command: 'pkill -f "node ${server.path}/server.js"'
+      );
+
+      // Start Node with explicit foreground process creation
+      final startScript = '''
+        cd /home/super
+        node ${server.path}/server.js &
+        NODE_PID=\$!
+        disown \$NODE_PID
+        echo \$NODE_PID
+      ''';
+      
+      // Write the script to a temp file and execute it
+      final startResult = await executeCommand(
+        command: '''
+          echo '$startScript' > /tmp/start_node_server.sh
+          chmod +x /tmp/start_node_server.sh
+          bash /tmp/start_node_server.sh
+        '''
+      );
+
+      if (startResult.stderr.isNotEmpty && !startResult.stderr.contains('disown')) {
+        throw Exception('Error starting Node server: ${startResult.stderr}');
+      }
+
+      // Get PID of the Node process
+      final psList = await executeCommand(
+        command: 'ps -ef | grep "${server.path}/server.js" | grep -v grep'
+      );
+      
+      print('Full process list output:');
+      print(psList.stdout);
+      
+      if (psList.stdout.trim().isEmpty) {
+        throw Exception('Failed to find Node process after starting');
+      }
+      
+      // Extract PID from ps output
+      final pid = int.parse(psList.stdout.trim().split(RegExp(r'\s+')).elementAt(1));
+      server.pid = pid;
+      
+      // Verify process exists and get its state
+      final processState = await executeCommand(
+        command: 'ps -o state= -p $pid'
+      );
+      
+      print('Process state: ${processState.stdout}');
+      
+      if (processState.stdout.trim().isEmpty) {
+        throw Exception('Node process failed to start or terminated immediately');
+      }
     }
     else if (server.type == ServerType.java) {
       // First, let's ensure no old instances are running
