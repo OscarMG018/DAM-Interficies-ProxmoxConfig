@@ -20,21 +20,3 @@ class MainApp extends StatelessWidget {
     );
   }
 }
-
-/* 
-
-Session 5 -
-- fix redirection
-- change extract rar/zip files to require the server to have the unzip command
-
-- UI overflow on both scenes {TEST}
-
-Session 6 
-detect nodeJS servers
-detect jar files
-Able to run the server, stop it, restart it
-
-Session 7 -
-Beutify
-*/
-

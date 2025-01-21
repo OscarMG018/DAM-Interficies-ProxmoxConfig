@@ -132,7 +132,7 @@ class _ConfigSceneState extends State<ConfigScene> {
       port: int.parse(portController.text),
     ).then((value) => {
       print("connected"),
-      Navigator.pushReplacement(
+      Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => const ServerScene(),

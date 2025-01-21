@@ -41,19 +41,20 @@ class ServerStatus extends StatelessWidget {
     const buttonHeight = 36.0;
     const buttonSpacing = 8.0;
     const rightPadding = 16.0;
+    const borderPadding = 32.0;
 
     if (isRunning) {
       return [
         // Stop button
         Rect.fromLTWH(
-          width - 2 * buttonWidth - buttonSpacing - rightPadding,
+          width - 2 * buttonWidth - buttonSpacing - rightPadding - borderPadding,
           22,
           buttonWidth,
           buttonHeight,
         ),
         // Restart button
         Rect.fromLTWH(
-          width - buttonWidth - rightPadding,
+          width - buttonWidth - rightPadding - borderPadding,
           22,
           buttonWidth,
           buttonHeight,
@@ -63,7 +64,7 @@ class ServerStatus extends StatelessWidget {
       return [
         // Start button
         Rect.fromLTWH(
-          width - buttonWidth - rightPadding,
+          width - buttonWidth - rightPadding - borderPadding,
           22,
           buttonWidth,
           buttonHeight,

@@ -36,6 +36,40 @@ class _PortRedirectionDialogState extends State<PortRedirectionDialog> {
     previusData.tport = newdata.tport;
   }
 
+  void addRedirection(RedirectionData data) {
+    redirections!.add(data);
+    setState(() {});
+  }
+
+  void deleteRedirection(RedirectionData data) {
+    print('Deleting: ${data.dport}, ${data.tport}');
+    setState(() {
+      redirections!.remove(data);
+    });
+  }
+
+  List<Widget> getRedirections() {
+    return List.generate(redirections!.length, (index) {
+      final e = redirections![index];
+      return Row(
+        key: ValueKey(e), // Key to uniquely identify the widget
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          PortRedirectionDisplay(
+            onChanged: (data) => onChanged(data, e),
+            initialData: e,
+          ),
+          CustomButton(
+            text: 'Delete',
+            color: Colors.red,
+            onPressed: () => deleteRedirection(e),
+          ),
+        ],
+      );
+    });
+  }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -48,8 +82,7 @@ class _PortRedirectionDialogState extends State<PortRedirectionDialog> {
           ListWithTitle(title: "Port Redirections", items: 
             redirections == null ? [
               const Center(child: CircularProgressIndicator()),
-            ] : 
-            redirections!.map((e) => PortRedirectionDisplay(onChanged: (data) => onChanged(data,e), initialData: e)).toList()
+            ] : getRedirections()
           ),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -62,9 +95,16 @@ class _PortRedirectionDialogState extends State<PortRedirectionDialog> {
                 },
               ),
               CustomButton(
+                text: 'Add',
+                color: Colors.blue,
+                onPressed: () => {
+                  addRedirection(new RedirectionData(dport: null, tport: null))
+                },
+              ),
+              CustomButton(
                 onPressed: () {
                   _saveRedirections();
-                  //Navigator.pop(context);
+                  Navigator.pop(context);
                 },
                 text: 'Save',
                 color: Colors.blue,

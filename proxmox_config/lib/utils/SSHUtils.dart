@@ -290,15 +290,17 @@ class SSHUtils {
   static Future<List<RedirectionData>> getRedirections() async {
     List<RedirectionData> redirections = [];
     final result = await executeCommand(
-        command: 'sudo iptables -t nat -L PREROUTING -n -v');
-    
+      command: 'sudo iptables -t nat -L PREROUTING -n -v',
+    );
+
     if (result.stderr.isNotEmpty) {
       throw Exception('Error executing command: ${result.stderr}');
     }
 
     final lines = result.stdout.split('\n');
     final regex = RegExp(
-        r'(?<protocol>\S+)\s+(?<dport>\d+)\s+(?<target>\S+)\s+(?<tport>\d+)');
+      r'REDIRECT\s+(?<protocol>\S+)\s+.*dpt:(?<dport>\d+)\s+redir\s+ports\s+(?<tport>\d+)',
+    );
 
     for (final line in lines) {
       final match = regex.firstMatch(line);
@@ -308,7 +310,7 @@ class SSHUtils {
           final tport = int.parse(match.namedGroup('tport')!);
           redirections.add(RedirectionData(dport: dport, tport: tport));
         } catch (e) {
-          throw Exception('Failed to get directory contents: $e');
+          throw Exception('Failed to parse redirection data: $e');
         }
       }
     }
@@ -316,14 +318,16 @@ class SSHUtils {
     return redirections;
   }
 
+
   static Future<void> saveRedirections(List<RedirectionData> redirections) async {
     // Delete all existing redirection
     await executeCommand(command: 'sudo iptables -t nat -F');
-
+    
     // Add all redirections
     for (final redirection in redirections) {
-        await executeCommand(
-            command: 'sudo iptables -t nat -A PREROUTING --dport ${redirection.dport??""} -j REDIRECT --to-port ${redirection.tport??""}');
+      await executeCommand(
+        command: 'sudo iptables -t nat -A PREROUTING -p tcp --dport ${redirection.dport??""}' 
+                ' -j REDIRECT --to-port ${redirection.tport??""}');
     }
   }
 
@@ -374,28 +378,62 @@ class SSHUtils {
       server.pid = int.parse(nodeResult.stdout.trim());
     }
     else if (server.type == ServerType.java) {
-      // Start Java process and capture PID
-      final javaResult = await executeCommand(
-        command: 'nohup java -jar ${server.path} > /dev/null 2>&1 & echo \$!'
+      // First, let's ensure no old instances are running
+      await executeCommand(
+        command: 'pkill -f "${server.path}"'
       );
       
-      if (javaResult.stderr.isNotEmpty) {
-        throw Exception('Error starting java server: ${javaResult.stderr}');
-      }
+      // Start Java with explicit foreground process creation
+      final startScript = '''
+        cd /home/super
+        java -jar ${server.path} &
+        JAVA_PID=\$!
+        disown \$JAVA_PID
+        echo \$JAVA_PID
+      ''';
       
-      // Verify process is running
-      final pid = int.parse(javaResult.stdout.trim());
-      final checkProcess = await executeCommand(
-        command: 'ps -p $pid -o pid='
+      // Write the script to a temp file and execute it
+      executeCommand(
+        command: '''
+          echo '$startScript' > /tmp/start_server.sh
+          chmod +x /tmp/start_server.sh
+          bash /tmp/start_server.sh
+        '''
       );
       
-      if (checkProcess.stdout.trim().isEmpty) {
-        throw Exception('Java process failed to start');
+      // Get PID of the Java process
+      final psList = await executeCommand(
+        command: 'ps -ef | grep "${server.path}" | grep -v grep'
+      );
+      
+      print('Full process list output:');
+      print(psList.stdout);
+      print(psList.stderr);
+      
+      if (psList.stdout.trim().isEmpty) {
+        throw Exception('Failed to find Java process after starting');
       }
       
+      // Extract PID from ps output
+      final pid = int.parse(psList.stdout.trim().split(RegExp(r'\s+')).elementAt(1));
       server.pid = pid;
+      
+      // Verify process exists and get its state
+      final processState = await executeCommand(
+        command: 'ps -o state= -p $pid'
+      );
+      
+      print('Process state: ${processState.stdout}');
+      
+      // Get parent process info
+      final parentInfo = await executeCommand(
+        command: 'ps -o ppid= -p $pid'
+      );
+      
+      print('Parent process ID: ${parentInfo.stdout}');
     }
-    server.isRunning = true;
+  
+  server.isRunning = true;
   }
 
   static Future<void> stopServer(ServerData server) async {

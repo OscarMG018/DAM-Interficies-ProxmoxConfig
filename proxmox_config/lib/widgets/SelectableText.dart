@@ -39,13 +39,11 @@ class _SelectableTextState extends State<SelectableText> {
           width: widget.size.width,
           height: widget.size.height,
           padding: const EdgeInsets.all(8),
-          child: Center(
-            child: Text(
-              widget.text,
-              style: const TextStyle(
-                fontSize: 16.0,
-                color: Colors.black,
-              ),
+          child: Text(
+            widget.text,
+            style: const TextStyle(
+              fontSize: 16.0,
+              color: Colors.black,
             ),
           ),
         ),

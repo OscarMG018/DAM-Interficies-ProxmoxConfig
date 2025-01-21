@@ -22,8 +22,8 @@ class _PortRedirectionDisplayState extends State<PortRedirectionDisplay> {
   @override
   void initState() {
     super.initState();
-    sourceController = TextEditingController(text: widget.initialData.dport.toString());
-    targetController = TextEditingController(text: widget.initialData.tport.toString());
+    sourceController = TextEditingController(text: widget.initialData.dport?.toString());
+    targetController = TextEditingController(text: widget.initialData.tport?.toString());
   }
 
   @override

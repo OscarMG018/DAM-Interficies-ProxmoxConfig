@@ -273,6 +273,12 @@ class _ServerSceneState extends State<ServerScene> {
     }
   }
 
+  void _disconnect() async {
+    SSHUtils.disconnect();
+    // Go back to ConfigScene
+    Navigator.pop(context);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -301,23 +307,31 @@ class _ServerSceneState extends State<ServerScene> {
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
+                    CustomButton(
+                      onPressed: _disconnect,
+                      text: 'Disconnect',
+                      color: Colors.red,
+                    ),
+                    const SizedBox(width: 32),
                     CustomButton(
                       onPressed: _back,
                       text: 'Back',
                       color: Colors.blue,
                     ),
+                    const SizedBox(width: 16),
                     CustomButton(
                       onPressed: _uploadFile,
                       text: 'Upload',
                       color: Colors.blue,
                     ),
+                    const SizedBox(width: 16),
                     CustomButton(
                       onPressed: _loadFiles,
                       text: 'Refresh',
                       color: Colors.blue,
                     ),
+                    const SizedBox(width: 16),
                     CustomButton(
                       onPressed: () {
                         setState(() {
@@ -327,13 +341,16 @@ class _ServerSceneState extends State<ServerScene> {
                       text: 'Sort by ${sorting.name}',
                       color: Colors.blue,
                     ),
+                    const SizedBox(width: 16),
                     CustomButton(
                       onPressed: () {
                         _showRedirectionDialog();
                       },
                       text: 'Show Port Redirection',
                       color: Colors.blue,
+                      width: 200,
                     ),
+                    const SizedBox(width: 16),
                     CustomCheckboxWithText(
                       isChecked: showHidden,
                       text: 'Show Hidden Files',
