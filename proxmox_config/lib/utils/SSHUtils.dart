@@ -56,7 +56,7 @@ class SSHUtils {
 
   static Future<void> executeCommandWithoutResult({required String command}) async {
     try {
-      SSHUtils.client!.execute(command);
+      await SSHUtils.client!.execute(command);
     } catch (e) {
       throw Exception('Error executing command "$command": $e');
     }
@@ -374,14 +374,26 @@ class SSHUtils {
       server.pid = int.parse(nodeResult.stdout.trim());
     }
     else if (server.type == ServerType.java) {
-      executeCommandWithoutResult(command: 'nohup java -jar ${server.path} > /dev/null 2>&1 &');
-      final jarResult = await executeCommand(command: 'ps -ef | grep ${server.path} | grep -v grep | awk \'{print \$2}\'');
-      if (jarResult.stderr.isNotEmpty) {
-        throw Exception('Error starting java server: ${jarResult.stderr}');
+      // Start Java process and capture PID
+      final javaResult = await executeCommand(
+        command: 'nohup java -jar ${server.path} > /dev/null 2>&1 & echo \$!'
+      );
+      
+      if (javaResult.stderr.isNotEmpty) {
+        throw Exception('Error starting java server: ${javaResult.stderr}');
       }
-      print(jarResult.stdout);
-      //[1] 6118
-      server.pid = int.parse(jarResult.stdout.split(' ').last);
+      
+      // Verify process is running
+      final pid = int.parse(javaResult.stdout.trim());
+      final checkProcess = await executeCommand(
+        command: 'ps -p $pid -o pid='
+      );
+      
+      if (checkProcess.stdout.trim().isEmpty) {
+        throw Exception('Java process failed to start');
+      }
+      
+      server.pid = pid;
     }
     server.isRunning = true;
   }

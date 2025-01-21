@@ -26,9 +26,8 @@ class MainApp extends StatelessWidget {
 Session 5 -
 - fix redirection
 - change extract rar/zip files to require the server to have the unzip command
-- UI overflow on both scenes
-- server scene: change the buttons and checkbox of ServerScene to be custom
-- server scene: renmame dialog to be a custom dialog
+
+- UI overflow on both scenes {TEST}
 
 Session 6 
 detect nodeJS servers
