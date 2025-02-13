@@ -14,6 +14,7 @@ import '../widgets/PortRedirectionDialog.dart';
 import 'package:provider/provider.dart';
 import '../providers/FileProvider.dart';
 import '../providers/ServerProvider.dart';
+import 'dart:io' show Platform;
 
 class ServerScene extends StatefulWidget {
 
@@ -50,7 +51,11 @@ class _ServerSceneState extends State<ServerScene> {
     if (action == 'Rename') {
       _handleRename(file);
     } else if (action == 'Delete') {
-      SSHUtils.deleteFile(name: file.name);
+      if (file.isFolder) {
+        SSHUtils.deleteFolder(name: file.name);
+      } else {
+        SSHUtils.deleteFile(name: file.name);
+      }
       context.read<FileProvider>().loadFiles();
     } else if (action == 'Info') {
       _handleInfo(file);
@@ -58,14 +63,6 @@ class _ServerSceneState extends State<ServerScene> {
       _handleDownload(file);
     } else if (action == 'Extract') {
       _handleExtract(file);
-    }
-  }
-
-  void _handleDelete(FileData file) {
-    if (file.isFolder) {
-      SSHUtils.deleteFolder(name: file.name);
-    } else {
-      SSHUtils.deleteFile(name: file.name);
     }
   }
 
@@ -205,7 +202,8 @@ class _ServerSceneState extends State<ServerScene> {
               Expanded(
                 child: Consumer2<FileProvider, ServerProvider>(
                   builder: (context, fileProvider, serverProvider, child) {
-                    if (fileProvider.isLoading || serverProvider.isLoading) {
+                    if ((fileProvider.isLoading && !serverProvider.isServerOperation) || 
+                        (serverProvider.isLoading && !serverProvider.isServerOperation)) {
                       return const Center(child: CircularProgressIndicator());
                     }
                     
@@ -237,7 +235,13 @@ class _ServerSceneState extends State<ServerScene> {
                         const SizedBox(width: 16),
                         CustomButton(
                           onPressed: _uploadFile,
-                          text: 'Upload',
+                          text: 'Upload File',
+                          color: Colors.blue,
+                        ),
+                        const SizedBox(width: 16),
+                        CustomButton(
+                          onPressed: () => context.read<FileProvider>().loadFiles(),
+                          text: 'Refresh',
                           color: Colors.blue,
                         ),
                         const SizedBox(width: 16),

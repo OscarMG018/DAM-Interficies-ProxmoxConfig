@@ -40,7 +40,7 @@ class FileInfoPainter extends CustomPainter {
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
 
     final Paint accentPaint = Paint()
-      ..color = _getFileTypeColor()
+      ..color = file.getFileTypeColor()
       ..style = PaintingStyle.fill;
 
     final Paint borderPaint = Paint()
@@ -168,28 +168,6 @@ class FileInfoPainter extends CustomPainter {
       );
 
       yOffset += math.max(valuePainter.height, lineHeight);
-    }
-  }
-
-  Color _getFileTypeColor() {
-    if (file.isFolder) {
-      return Colors.blue;
-    }
-    switch (file.extension.toLowerCase()) {
-      case 'pdf':
-        return Colors.red;
-      case 'doc':
-      case 'docx':
-        return Colors.blue;
-      case 'xls':
-      case 'xlsx':
-        return Colors.green;
-      case 'jpg':
-      case 'jpeg':
-      case 'png':
-        return Colors.purple;
-      default:
-        return Colors.grey;
     }
   }
 

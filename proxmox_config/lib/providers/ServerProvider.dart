@@ -5,12 +5,17 @@ import '../utils/SSHUtils.dart';
 class ServerProvider extends ChangeNotifier {
   ServerData? _server;
   bool _isLoading = false;
+  bool _isServerOperation = false;
+  String _currentOperation = '';
 
   ServerData? get server => _server;
   bool get isLoading => _isLoading;
+  bool get isServerOperation => _isServerOperation;
+  String get currentOperation => _currentOperation;
 
   Future<void> loadServer() async {
     _isLoading = true;
+    _currentOperation = 'Refreshing';
     notifyListeners();
 
     try {
@@ -20,6 +25,7 @@ class ServerProvider extends ChangeNotifier {
       print('Error loading server: $e');
     } finally {
       _isLoading = false;
+      _currentOperation = '';
       notifyListeners();
     }
   }
@@ -27,7 +33,8 @@ class ServerProvider extends ChangeNotifier {
   Future<void> startServer() async {
     if (_server == null) return;
     
-    _isLoading = true;
+    _isServerOperation = true;
+    _currentOperation = 'Starting';
     notifyListeners();
 
     try {
@@ -36,7 +43,8 @@ class ServerProvider extends ChangeNotifier {
     } catch (e) {
       print('Error starting server: $e');
     } finally {
-      _isLoading = false;
+      _isServerOperation = false;
+      _currentOperation = '';
       notifyListeners();
     }
   }
@@ -44,7 +52,8 @@ class ServerProvider extends ChangeNotifier {
   Future<void> stopServer() async {
     if (_server == null) return;
     
-    _isLoading = true;
+    _isServerOperation = true;
+    _currentOperation = 'Stopping';
     notifyListeners();
 
     try {
@@ -53,7 +62,8 @@ class ServerProvider extends ChangeNotifier {
     } catch (e) {
       print('Error stopping server: $e');
     } finally {
-      _isLoading = false;
+      _isServerOperation = false;
+      _currentOperation = '';
       notifyListeners();
     }
   }
@@ -61,7 +71,8 @@ class ServerProvider extends ChangeNotifier {
   Future<void> restartServer() async {
     if (_server == null) return;
     
-    _isLoading = true;
+    _isServerOperation = true;
+    _currentOperation = 'Restarting';
     notifyListeners();
 
     try {
@@ -69,7 +80,8 @@ class ServerProvider extends ChangeNotifier {
     } catch (e) {
       print('Error restarting server: $e');
     } finally {
-      _isLoading = false;
+      _isServerOperation = false;
+      _currentOperation = '';
       notifyListeners();
     }
   }

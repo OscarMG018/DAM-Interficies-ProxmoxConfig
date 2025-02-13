@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:proxmox_config/models/ServerType.dart';
+import 'package:provider/provider.dart';
+import '../providers/ServerProvider.dart';
 
 class ServerStatus extends StatelessWidget {
   final ServerType serverType;
@@ -19,19 +21,65 @@ class ServerStatus extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 80,
-      width: double.infinity,
-      child: GestureDetector(
-        onTapUp: (details) => _handleTap(context, details.localPosition),
-        child: CustomPaint(
-          painter: ServerStatusPainter(
-            serverType: serverType,
-            isRunning: isRunning,
-            buttonLocations: _calculateButtonLocations(context),
-          ),
-        ),
-      ),
+    return Consumer<ServerProvider>(
+      builder: (context, serverProvider, child) {
+        return Stack(
+          children: [
+            SizedBox(
+              height: 80,
+              width: double.infinity,
+              child: GestureDetector(
+                onTapUp: serverProvider.isServerOperation 
+                  ? null 
+                  : (details) => _handleTap(context, details.localPosition),
+                child: CustomPaint(
+                  painter: ServerStatusPainter(
+                    serverType: serverType,
+                    isRunning: isRunning,
+                    buttonLocations: _calculateButtonLocations(context),
+                    isDisabled: serverProvider.isServerOperation,
+                  ),
+                ),
+              ),
+            ),
+            if (serverProvider.isServerOperation)
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          serverProvider.currentOperation != '' 
+                            ? '${serverProvider.currentOperation}...'
+                            : isRunning ? 'Stopping...' : 'Starting...',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 
@@ -94,23 +142,29 @@ class ServerStatusPainter extends CustomPainter {
   final ServerType serverType;
   final bool isRunning;
   final List<Rect> buttonLocations;
+  final bool isDisabled;
 
   ServerStatusPainter({
     required this.serverType,
     required this.isRunning,
     required this.buttonLocations,
+    this.isDisabled = false,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
     _drawBackground(canvas, size);
     _drawText(canvas, size);
-    _drawButtons(canvas);
+    if (!isDisabled) {
+      _drawButtons(canvas);
+    }
   }
 
   void _drawBackground(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = isRunning ? Colors.green.shade600 : Colors.red.shade600
+      ..color = isDisabled 
+        ? Colors.grey.shade600
+        : (isRunning ? Colors.green.shade600 : Colors.red.shade600)
       ..style = PaintingStyle.fill;
 
     final RRect rRect = RRect.fromRectAndRadius(
@@ -196,6 +250,7 @@ class ServerStatusPainter extends CustomPainter {
   @override
   bool shouldRepaint(ServerStatusPainter oldDelegate) {
     return oldDelegate.serverType != serverType || 
-           oldDelegate.isRunning != isRunning;
+           oldDelegate.isRunning != isRunning ||
+           oldDelegate.isDisabled != isDisabled;
   }
 }

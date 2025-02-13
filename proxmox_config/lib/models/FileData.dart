@@ -1,4 +1,5 @@
 import 'package:intl/intl.dart';
+import 'package:flutter/material.dart';
 
 class FileData {
   final String name;
@@ -23,11 +24,18 @@ class FileData {
     if (isFolder) {
       return 'assets/images/folder.png';
     } else {
-      if (extension == 'txt') {
+      if (extension.toLowerCase() == 'txt' || extension.toLowerCase() == 'md') {
         return 'assets/images/txt.png';
-      } else if (extension == 'png') {
+      } else if (extension.toLowerCase() == 'png' || extension.toLowerCase() == 'jpg' || extension.toLowerCase() == 'jpeg') {
         return 'assets/images/png.png';
-      } else {
+      } else if (extension.toLowerCase() == 'zip') {
+        return 'assets/images/zip.png';
+      } else if (extension.toLowerCase() == 'jar') {
+        return 'assets/images/jar.png';
+      } else if (extension.toLowerCase() == 'js') {
+        return 'assets/images/js.png';
+      }
+      else {
         return 'assets/images/file.png';
       }
     }
@@ -48,6 +56,7 @@ class FileData {
   String getFormatedDate() {
     return DateFormat('EEEE, d MMMM y, h:mm a').format(lastModified);
   }
+
   //Owener permision:(read/write/execute) group:(read) everyone(read)
   String getFormattedPermissions() {
     String formatSection(String section) {
@@ -67,5 +76,29 @@ class FileData {
     final everyone = formatSection(permissions.substring(7, 10));
 
     return "Owner permission: ($owner) group: ($group) everyone: ($everyone)";
+  }
+
+  Color getFileTypeColor() {
+    if (isFolder) {
+      return Colors.blue;
+    }
+    switch (extension.toLowerCase()) {
+      case 'txt':
+      case 'md':
+        return Colors.black;
+      case 'jar':
+        return Colors.red;
+      case 'js':
+        return Colors.yellow;
+      case 'zip':
+      case 'rar':
+        return Colors.purple;
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+        return Colors.green;
+      default:
+        return Colors.grey;
+    }
   }
 }

@@ -6,6 +6,7 @@ import '../models/FileData.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:proxmox_config/models/ServerData.dart';
+import 'package:path/path.dart' as path;
 
 class SSHUtils {
   static Utf8Codec utf8 = const Utf8Codec();
@@ -244,45 +245,6 @@ class SSHUtils {
       return "File Uploaded Succesfully";
     } catch (e) {
       return 'Failed to upload file: $e';
-    }
-  }
-
-  static Future<String> uploadFolder({
-    required String folderPath,
-    required String remoteFolderPath,
-  }) async {
-    if (client == null) {
-      throw Exception('No SSH client connected.');
-    }
-
-    final sftp = await client!.sftp();
-    final dir = Directory(folderPath);
-
-    if (!await dir.exists()) {
-      return 'The specified folder does not exist: $folderPath';
-    }
-
-    try {
-      // Create the remote folder if it does not exist
-      await sftp.mkdir(remoteFolderPath);
-
-      // Iterate over all files and subdirectories in the local folder
-      await for (var entity in dir.list(recursive: true, followLinks: false)) {
-        final relativePath = entity.path.substring(folderPath.length + 1);
-        final remotePath = '$remoteFolderPath/$relativePath';
-
-        if (entity is File) {
-          // Upload each file
-          await uploadFile(name: relativePath, sourcePath: entity.path);
-        } else if (entity is Directory) {
-          // Create subdirectories on the remote server
-          await sftp.mkdir(remotePath);
-        }
-      }
-
-      return "Folder uploaded successfully.";
-    } catch (e) {
-      return 'Failed to upload folder: $e';
     }
   }
 
