@@ -92,6 +92,14 @@ class _ServerSceneState extends State<ServerScene> {
     }
   }
 
+  void _handleDelete(FileData file) {
+    if (file.isFolder) {
+      SSHUtils.deleteFolder(name: file.name);
+    } else {
+      SSHUtils.deleteFile(name: file.name);
+    }
+  }
+
   void _handleRename(FileData file) {
     TextEditingController controller = TextEditingController(text: file.name);
     showDialog(
@@ -199,45 +207,46 @@ class _ServerSceneState extends State<ServerScene> {
   }
 
   List<FileDisplay> _getFiles() {
-    //Sort files firts
+    // Create a copy of files to sort
+    List<FileData> sortedFiles = List.from(files);
+    
+    // Sort files
     if (sorting == _FileSorting.name) {
-      files.sort((a, b) => a.name.compareTo(b.name));
+      sortedFiles.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
     } else if (sorting == _FileSorting.size) {
-      files.sort((a, b) => a.size.compareTo(b.size));
+      sortedFiles.sort((a, b) => b.size.compareTo(a.size)); // Larger files first
     } else if (sorting == _FileSorting.lastModified) {
-      files.sort((a, b) => a.lastModified.compareTo(b.lastModified));
+      sortedFiles.sort((a, b) => b.lastModified.compareTo(a.lastModified)); // Newer files first
     }
-    List<FileDisplay> fileList = [];
-    for (FileData file in files) {
+
+    // Convert sorted files to FileDisplay widgets
+    return sortedFiles.map((file) {
       if (file.isFolder) {
-        fileList.add(FileDisplay(
+        return FileDisplay(
           fileName: file.name,
           assetImagePath: file.getImagePath(),
-          actions: const ['Rename', 'Delete','Info', 'Download'],
+          actions: const ['Rename', 'Delete', 'Info', 'Download'],
           onActionSelected: (action) => _handleFileAction(action, file),
           onDoubleClick: () => _handleFileDoubleClick(file),
-        ));
-      }
-      else if (file.extension == 'zip') {
-        fileList.add(FileDisplay(
+        );
+      } else if (file.extension == 'zip') {
+        return FileDisplay(
           fileName: file.name,
           assetImagePath: file.getImagePath(),
-          actions: const ['Rename', 'Delete','Info', 'Download', 'Extract'],
+          actions: const ['Rename', 'Delete', 'Info', 'Download', 'Extract'],
           onActionSelected: (action) => _handleFileAction(action, file),
           onDoubleClick: () => _handleFileDoubleClick(file),
-        ));
-      }
-      else {
-        fileList.add(FileDisplay(
+        );
+      } else {
+        return FileDisplay(
           fileName: file.name,
           assetImagePath: file.getImagePath(),
-          actions: const ['Rename', 'Delete','Info', 'Download'],
+          actions: const ['Rename', 'Delete', 'Info', 'Download'],
           onActionSelected: (action) => _handleFileAction(action, file),
           onDoubleClick: () => _handleFileDoubleClick(file),
-        ));
+        );
       }
-    }
-    return fileList;
+    }).toList();
   }
 
   void _startServer() async {
@@ -334,9 +343,8 @@ class _ServerSceneState extends State<ServerScene> {
                     const SizedBox(width: 16),
                     CustomButton(
                       onPressed: () {
-                        setState(() {
-                          sorting = _FileSorting.values[(sorting.index + 1) % _FileSorting.values.length];
-                        });
+                        sorting = _FileSorting.values[(sorting.index + 1) % _FileSorting.values.length];
+                        _loadFiles();
                       },
                       text: 'Sort by ${sorting.name}',
                       color: Colors.blue,

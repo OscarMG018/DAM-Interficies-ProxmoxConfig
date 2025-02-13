@@ -90,7 +90,9 @@ class SSHUtils {
   }) async {
     try {
       final result = await executeCommand(
-        command: showHidden ? 'ls -la "$currentDirectory"':'ls -l "$currentDirectory"',
+        command: showHidden
+        ? 'LC_TIME=C ls -la "$currentDirectory"'
+        : 'LC_TIME=C ls -l "$currentDirectory"'
       );
       
       if (result.stderr.isNotEmpty) {
@@ -158,6 +160,22 @@ class SSHUtils {
     try {
       final result = await executeCommand(
         command: 'rm "$name"',
+      );
+
+      if (result.stderr.isNotEmpty) {
+        throw Exception('Error deleting file: ${result.stderr}');
+      }
+    } catch (e) {
+      throw Exception('Failed to delete file: $e');
+    }
+  }
+
+  static Future<void> deleteFolder({
+    required String name,
+  }) async {
+    try {
+      final result = await executeCommand(
+        command: 'rm -r "$name"',
       );
 
       if (result.stderr.isNotEmpty) {
@@ -317,7 +335,6 @@ class SSHUtils {
 
     return redirections;
   }
-
 
   static Future<void> saveRedirections(List<RedirectionData> redirections) async {
     // Delete all existing redirection
