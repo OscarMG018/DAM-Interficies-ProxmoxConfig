@@ -11,8 +11,9 @@ import '../widgets/FileInfo.dart';
 import '../widgets/ServerStatus.dart';
 import '../models/ServerData.dart';
 import '../widgets/PortRedirectionDialog.dart';
-
-enum _FileSorting { name, size, lastModified }
+import 'package:provider/provider.dart';
+import '../providers/FileProvider.dart';
+import '../providers/ServerProvider.dart';
 
 class ServerScene extends StatefulWidget {
 
@@ -25,45 +26,13 @@ class ServerScene extends StatefulWidget {
 }
 
 class _ServerSceneState extends State<ServerScene> {
-  List<FileData> files = [];
-  bool isLoading = true;
-  bool showHidden = false;
-  _FileSorting sorting = _FileSorting.name;
-  ServerData? server;
-
   @override
   void initState() {
     super.initState();
-    _loadFiles();
-    _loadServer();
-  }
-
-  Future<void> _loadServer() async {
-    setState(() => isLoading = true);
-    try {
-      server = await SSHUtils.DetectServers();
-      print("Server detected: ${server?.type}");
-      setState(() {
-        isLoading = false;
-      });
-    } catch (e) {
-      print('Error loading server: $e');
-      setState(() => isLoading = false);
-    }
-  }
-
-  Future<void> _loadFiles() async {
-    setState(() => isLoading = true);
-    try {
-      final loadedFiles = await SSHUtils.getDirectoryContents(showHidden: showHidden);
-      setState(() {
-        files = loadedFiles;
-        isLoading = false;
-      });
-    } catch (e) {
-      print('Error loading files: $e');
-      setState(() => isLoading = false);
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<FileProvider>().loadFiles();
+      context.read<ServerProvider>().loadServer();
+    });
   }
 
   List<String> getFileActions(FileData file) {
@@ -82,7 +51,7 @@ class _ServerSceneState extends State<ServerScene> {
       _handleRename(file);
     } else if (action == 'Delete') {
       SSHUtils.deleteFile(name: file.name);
-      _loadFiles();
+      context.read<FileProvider>().loadFiles();
     } else if (action == 'Info') {
       _handleInfo(file);
     } else if (action == 'Download') {
@@ -126,7 +95,7 @@ class _ServerSceneState extends State<ServerScene> {
                 return;
               }
               SSHUtils.renameFile(oldName: file.name, newName: controller.text);
-              _loadFiles();
+              context.read<FileProvider>().loadFiles();
               Navigator.pop(context);
             },
             text: 'Rename',
@@ -156,20 +125,20 @@ class _ServerSceneState extends State<ServerScene> {
   void _handleExtract(FileData file) async {
     String result = await SSHUtils.extractFile(name: file.name);
     _showSnackBar(message: result);
-    _loadFiles();
+    context.read<FileProvider>().loadFiles();
   }
 
   void _handleFileDoubleClick(file) {
     print('Double click on file: ${file.name}');
     if (file.isFolder) {
       SSHUtils.changeDirectory(path: '${file.name}');
-      _loadFiles();
+      context.read<FileProvider>().loadFiles();
     }
   }
 
   void _back() {
     SSHUtils.changeDirectory(path: '..');
-    _loadFiles();
+    context.read<FileProvider>().loadFiles();
   }
 
   void _showSnackBar({
@@ -190,13 +159,12 @@ class _ServerSceneState extends State<ServerScene> {
     if (result != null) {
       String uploadResult = await SSHUtils.uploadFile(name: result.files.first.name, sourcePath: result.files.first.path!);
       _showSnackBar(message: uploadResult);
-      _loadFiles();
+      context.read<FileProvider>().loadFiles();
     }
   }
 
   void _showHiddenFiles(value) {
-    showHidden = value;
-    _loadFiles();
+    context.read<FileProvider>().toggleShowHidden();
   }
 
   void _showRedirectionDialog() {
@@ -206,21 +174,109 @@ class _ServerSceneState extends State<ServerScene> {
     );
   }
 
-  List<FileDisplay> _getFiles() {
-    // Create a copy of files to sort
-    List<FileData> sortedFiles = List.from(files);
-    
-    // Sort files
-    if (sorting == _FileSorting.name) {
-      sortedFiles.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-    } else if (sorting == _FileSorting.size) {
-      sortedFiles.sort((a, b) => b.size.compareTo(a.size)); // Larger files first
-    } else if (sorting == _FileSorting.lastModified) {
-      sortedFiles.sort((a, b) => b.lastModified.compareTo(a.lastModified)); // Newer files first
-    }
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Expanded(
+        child: Container(
+          color: Colors.white,
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              Consumer<ServerProvider>(
+                builder: (context, serverProvider, child) {
+                  final server = serverProvider.server;
+                  if (server == null) return const SizedBox.shrink();
+                  
+                  return Column(
+                    children: [
+                      ServerStatus(
+                        isRunning: server.isRunning,
+                        serverType: server.type,
+                        onStart: _startServer,
+                        onStop: _stopServer,
+                        onRestart: _restartServer
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                  );
+                },
+              ),
+              Expanded(
+                child: Consumer2<FileProvider, ServerProvider>(
+                  builder: (context, fileProvider, serverProvider, child) {
+                    if (fileProvider.isLoading || serverProvider.isLoading) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    
+                    return ListWithTitle(
+                      title: 'Files',
+                      items: _getFiles(),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 16),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Consumer<FileProvider>(
+                  builder: (context, fileProvider, child) {
+                    return Row(
+                      children: [
+                        CustomButton(
+                          onPressed: _disconnect,
+                          text: 'Disconnect',
+                          color: Colors.red,
+                        ),
+                        const SizedBox(width: 32),
+                        CustomButton(
+                          onPressed: _back,
+                          text: 'Back',
+                          color: Colors.blue,
+                        ),
+                        const SizedBox(width: 16),
+                        CustomButton(
+                          onPressed: _uploadFile,
+                          text: 'Upload',
+                          color: Colors.blue,
+                        ),
+                        const SizedBox(width: 16),
+                        CustomButton(
+                          onPressed: () {
+                            context.read<FileProvider>().cycleSorting();
+                          },
+                          text: 'Sort by ${fileProvider.sorting.name}',
+                          color: Colors.blue,
+                        ),
+                        const SizedBox(width: 16),
+                        CustomButton(
+                          onPressed: () {
+                            _showRedirectionDialog();
+                          },
+                          text: 'Show Port Redirection',
+                          color: Colors.blue,
+                          width: 200,
+                        ),
+                        const SizedBox(width: 16),
+                        CustomCheckboxWithText(
+                          isChecked: fileProvider.showHidden,
+                          text: 'Show Hidden Files',
+                          onChanged: _showHiddenFiles,
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
-    // Convert sorted files to FileDisplay widgets
-    return sortedFiles.map((file) {
+  List<FileDisplay> _getFiles() {
+    return context.read<FileProvider>().files.map((file) {
       if (file.isFolder) {
         return FileDisplay(
           fileName: file.name,
@@ -250,127 +306,20 @@ class _ServerSceneState extends State<ServerScene> {
   }
 
   void _startServer() async {
-    setState(() => isLoading = true);
-    try {
-      await SSHUtils.startServer(server!);
-      setState(() => isLoading = false);
-    } catch (e) {
-      print('Error starting server: $e');
-      setState(() => isLoading = false);
-    }
+    await context.read<ServerProvider>().startServer();
   }
 
   void _stopServer() async {
-    setState(() => isLoading = true);
-    try {
-      await SSHUtils.stopServer(server!);
-      setState(() => isLoading = false);
-    } catch (e) {
-      print('Error stopping server: $e');
-      setState(() => isLoading = false);
-    }
+    await context.read<ServerProvider>().stopServer();
   }
 
   void _restartServer() async {
-    setState(() => isLoading = true);
-    try {
-      await SSHUtils.restartServer(server!);
-      setState(() => isLoading = false);
-    } catch (e) {
-      print('Error restarting server: $e');
-      setState(() => isLoading = false);
-    }
+    await context.read<ServerProvider>().restartServer();
   }
 
   void _disconnect() async {
     SSHUtils.disconnect();
     // Go back to ConfigScene
     Navigator.pop(context);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Expanded(
-        child: Container(
-          color: Colors.white,
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              if (server != null)
-                ServerStatus(isRunning: server!.isRunning, serverType: server!.type,
-                  onStart: () => _startServer(),
-                  onStop: () => _stopServer(),
-                  onRestart: () => _restartServer()
-                ),
-                const SizedBox(height: 16),
-              Expanded(
-                child: isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : ListWithTitle(
-                      title: 'Files',
-                      items: _getFiles(),
-                    ),
-              ),
-              const SizedBox(height: 16),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    CustomButton(
-                      onPressed: _disconnect,
-                      text: 'Disconnect',
-                      color: Colors.red,
-                    ),
-                    const SizedBox(width: 32),
-                    CustomButton(
-                      onPressed: _back,
-                      text: 'Back',
-                      color: Colors.blue,
-                    ),
-                    const SizedBox(width: 16),
-                    CustomButton(
-                      onPressed: _uploadFile,
-                      text: 'Upload',
-                      color: Colors.blue,
-                    ),
-                    const SizedBox(width: 16),
-                    CustomButton(
-                      onPressed: _loadFiles,
-                      text: 'Refresh',
-                      color: Colors.blue,
-                    ),
-                    const SizedBox(width: 16),
-                    CustomButton(
-                      onPressed: () {
-                        sorting = _FileSorting.values[(sorting.index + 1) % _FileSorting.values.length];
-                        _loadFiles();
-                      },
-                      text: 'Sort by ${sorting.name}',
-                      color: Colors.blue,
-                    ),
-                    const SizedBox(width: 16),
-                    CustomButton(
-                      onPressed: () {
-                        _showRedirectionDialog();
-                      },
-                      text: 'Show Port Redirection',
-                      color: Colors.blue,
-                      width: 200,
-                    ),
-                    const SizedBox(width: 16),
-                    CustomCheckboxWithText(
-                      isChecked: showHidden,
-                      text: 'Show Hidden Files',
-                      onChanged: _showHiddenFiles,
-                    ),
-                  ],
-                )
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 }

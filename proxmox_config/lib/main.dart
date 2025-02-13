@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'scenes/ConfigScene.dart';
+import 'package:provider/provider.dart';
+import 'providers/FileProvider.dart';
+import 'providers/ServerProvider.dart';
 
 void main() {
   runApp(const MainApp());
@@ -10,11 +13,17 @@ class MainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: Scaffold(
-        body: Center(
-          child: ConfigScene(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => FileProvider()),
+        ChangeNotifierProvider(create: (_) => ServerProvider()),
+      ],
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: Scaffold(
+          body: Center(
+            child: ConfigScene(),
+          ),
         ),
       ),
     );
