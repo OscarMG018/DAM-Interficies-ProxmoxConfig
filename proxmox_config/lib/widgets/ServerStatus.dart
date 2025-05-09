@@ -5,6 +5,7 @@ import '../providers/ServerProvider.dart';
 
 class ServerStatus extends StatelessWidget {
   final ServerType serverType;
+  final String serverPath;
   final bool isRunning;
   final VoidCallback onStart;
   final VoidCallback onStop;
@@ -12,6 +13,7 @@ class ServerStatus extends StatelessWidget {
 
   const ServerStatus({
     Key? key,
+    required this.serverPath,
     required this.serverType,
     required this.isRunning,
     required this.onStart,
@@ -34,6 +36,7 @@ class ServerStatus extends StatelessWidget {
                   : (details) => _handleTap(context, details.localPosition),
                 child: CustomPaint(
                   painter: ServerStatusPainter(
+                    serverPath: serverPath,
                     serverType: serverType,
                     isRunning: isRunning,
                     buttonLocations: _calculateButtonLocations(context),
@@ -140,11 +143,13 @@ class ServerStatus extends StatelessWidget {
 
 class ServerStatusPainter extends CustomPainter {
   final ServerType serverType;
+  final String serverPath;
   final bool isRunning;
   final List<Rect> buttonLocations;
   final bool isDisabled;
 
   ServerStatusPainter({
+    required this.serverPath,
     required this.serverType,
     required this.isRunning,
     required this.buttonLocations,
@@ -177,8 +182,8 @@ class ServerStatusPainter extends CustomPainter {
   void _drawText(Canvas canvas, Size size) {
     final textSpan = TextSpan(
       text: serverType == ServerType.node 
-          ? 'Node Server detected'
-          : 'Java Server detected',
+          ? 'Node Server detected at $serverPath'
+          : 'Java Server detected at $serverPath',
       style: const TextStyle(
         color: Colors.white,
         fontSize: 18,

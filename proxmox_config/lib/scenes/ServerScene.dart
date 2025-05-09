@@ -9,12 +9,10 @@ import '../widgets/FileDisplay.dart';
 import '../widgets/ListWithTitle.dart';
 import '../widgets/FileInfo.dart';
 import '../widgets/ServerStatus.dart';
-import '../models/ServerData.dart';
 import '../widgets/PortRedirectionDialog.dart';
 import 'package:provider/provider.dart';
 import '../providers/FileProvider.dart';
 import '../providers/ServerProvider.dart';
-import 'dart:io' show Platform;
 
 class ServerScene extends StatefulWidget {
 
@@ -188,6 +186,7 @@ class _ServerSceneState extends State<ServerScene> {
                   return Column(
                     children: [
                       ServerStatus(
+                        serverPath: server.path,
                         isRunning: server.isRunning,
                         serverType: server.type,
                         onStart: _startServer,

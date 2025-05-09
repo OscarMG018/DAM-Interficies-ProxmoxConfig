@@ -253,7 +253,7 @@ class _ConfigSceneState extends State<ConfigScene> {
                             ), 
                             const SizedBox(width: 10),
                             CustomButton(
-                              text: "Add to favoirites",
+                              text: activeConfiguration!.favorite ? "Remove from favoirites" : "Add to favoirites",
                               color: Colors.yellow,
                               onPressed: setFavorite,
                               textStyle: const TextStyle(color: Colors.black),

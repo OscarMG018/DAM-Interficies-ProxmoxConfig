@@ -14,13 +14,22 @@ class CustomButton extends StatefulWidget {
     required this.text,
     required this.color,
     this.onPressed,
-    this.width = 120,
+    double? width,
     this.height = 40,
     this.textStyle = const TextStyle(
       color: Colors.white,
       fontSize: 16,
     ),
-  });
+  }) : width = width ?? _calculateTextWidth(text, textStyle);
+
+  static double _calculateTextWidth(String text, TextStyle style) {
+    final textPainter = TextPainter(
+      text: TextSpan(text: text, style: style),
+      maxLines: 1,
+      textDirection: TextDirection.ltr,
+    )..layout();
+    return textPainter.width + 32; // Adding 32 for padding
+  }
 
   @override
   State<StatefulWidget> createState() => _CustomButtonState();
